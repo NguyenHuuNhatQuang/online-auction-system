@@ -16,6 +16,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDateTime;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.never;
@@ -121,5 +122,37 @@ class MessageRouterTest {
 
     // Đảm bảo rằng server KHÔNG phát sóng bậy bạ lệnh này cho toàn hệ thống
     verify(mockServer, never()).broadcastMessage(anyString());
+  }
+
+  @Test
+  @DisplayName("Định tuyến đúng và tạo phiên đấu giá khi nhận lệnh CREATE_AUCTION")
+  void testRoute_CreateAuction_Success() {
+    // 1. Chuẩn bị số lượng phiên đấu giá trước khi test (Đã có 1 cái từ setUp)
+    int initialAuctions = auctionManager.getAllAuctions().size();
+
+    // 2. Chuẩn bị chuỗi JSON mô phỏng lệnh tạo phiên đấu giá từ Seller
+    String createAuctionJson = "{"
+        + "\"action\": \"CREATE_AUCTION\","
+        + "\"payload\": \"{\\\"itemType\\\":\\\"ELECTRONICS\\\", \\\"itemName\\\":\\\"Laptop Gaming\\\", \\\"itemDesc\\\":\\\"Mới 100%\\\", \\\"startPrice\\\": 1500.0, \\\"durationMinutes\\\": 60, \\\"sellerId\\\":\\\"seller_99\\\", \\\"sellerName\\\":\\\"John Doe\\\"}\""
+        + "}";
+
+    // 3. Thực thi việc định tuyến
+    messageRouter.route(createAuctionJson, mockClient);
+
+    // 4. Kiểm chứng Client nhận được phản hồi thành công
+    ArgumentCaptor<String> messageCaptor = ArgumentCaptor.forClass(String.class);
+    verify(mockClient).sendMessage(messageCaptor.capture());
+
+    String responseToClient = messageCaptor.getValue();
+    assertTrue(responseToClient.contains("AUCTION_CREATED"), "Router phải báo tạo thành công");
+    assertTrue(responseToClient.contains("RUNNING"), "Phiên đấu giá mới phải ở trạng thái RUNNING");
+
+    // 5. Kiểm chứng dữ liệu trong bộ nhớ (AuctionManager) đã tăng thêm 1
+    assertEquals(initialAuctions + 1, auctionManager.getAllAuctions().size(), "Hệ thống phải lưu thêm 1 phiên đấu giá mới");
+
+    // 6. Kiểm chứng Server đã phát loa (Broadcast) báo có hàng mới lên sàn
+    ArgumentCaptor<String> broadcastCaptor = ArgumentCaptor.forClass(String.class);
+    verify(mockServer).broadcastMessage(broadcastCaptor.capture());
+    assertTrue(broadcastCaptor.getValue().contains("NEW_AUCTION_BROADCAST"), "Hệ thống phải phát sóng sự kiện này");
   }
 }

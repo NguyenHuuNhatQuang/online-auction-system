@@ -104,18 +104,28 @@ public class AuctionServer {
   }
 
   /**
-   * Ngắt hoạt động của máy chủ một cách an toàn.
-   * Tiến hành thu hồi tài nguyên luồng của Thread Pool và tắt bộ quét thời gian.
+   * Ngắt hoạt động của máy chủ một cách an toàn (Graceful Shutdown).
+   * Tiến hành chủ động ngắt kết nối tất cả Client, thu hồi tài nguyên luồng
+   * và tắt bộ quét thời gian.
    */
   public void stopServer() {
     this.isRunning = false;
 
-    // Hủy cấp phát tài nguyên luồng chạy ngầm để tránh rò rỉ bộ nhớ (Memory Leak)
+    // 1. Hủy cấp phát tài nguyên luồng chạy ngầm
     if (scheduler != null) {
       scheduler.stop();
     }
 
-    // Tắt Thread Pool xử lý kết nối mạng
+    // 2. Chủ động ngắt kết nối toàn bộ Client đang trực tuyến
+    if (!activeClients.isEmpty()) {
+      System.out.println("[AuctionServer] Đang ngắt kết nối " + activeClients.size() + " Client hiện tại...");
+      for (ClientHandler client : activeClients) {
+        client.disconnect();
+      }
+      activeClients.clear(); // Làm sạch bộ nhớ danh sách
+    }
+
+    // 3. Tắt Thread Pool xử lý kết nối mạng
     if (threadPool != null && !threadPool.isShutdown()) {
       threadPool.shutdown();
     }

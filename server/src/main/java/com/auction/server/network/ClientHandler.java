@@ -60,19 +60,26 @@ public class ClientHandler implements Runnable {
   }
 
   /**
-   * Dọn dẹp tài nguyên và thông báo cho Server khi Client ngắt kết nối.
+   * Ngắt kết nối an toàn cho Client này.
+   * Đóng các luồng I/O và giải phóng Socket.
+   * Hàm này được để public để Server có thể chủ động gọi khi tắt hệ thống.
    */
   public void disconnect() {
     try {
-      if (in != null) in.close();
-      if (out != null) out.close();
+      if (in != null) {
+        in.close();
+      }
+      if (out != null) {
+        out.close();
+      }
       if (clientSocket != null && !clientSocket.isClosed()) {
         clientSocket.close();
       }
+      // Báo cho Server biết để gỡ khỏi danh sách quản lý
       server.removeClient(this);
-      System.out.println("[ClientHandler] Client đã ngắt kết nối: " + clientId);
+      System.out.println("[ClientHandler] Đã ngắt kết nối Client: " + clientId);
     } catch (IOException e) {
-      e.printStackTrace();
+      System.err.println("[ClientHandler] Lỗi khi đóng kết nối Client " + clientId + ": " + e.getMessage());
     }
   }
 }
