@@ -18,9 +18,6 @@ public class ClientHandler implements Runnable {
   private BufferedReader in;
   private String clientId;
 
-  /**
-   * ...
-   */
   public ClientHandler(Socket clientSocket, AuctionServer server) {
     this.clientSocket = clientSocket;
     this.server = server;

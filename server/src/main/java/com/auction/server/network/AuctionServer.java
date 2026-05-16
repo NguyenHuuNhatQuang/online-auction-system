@@ -23,7 +23,6 @@ public class AuctionServer {
   // Lưu trữ danh sách các Client đang trực tuyến một cách an toàn (Thread-safe)
   private final Set<ClientHandler> activeClients;
 
-  /** ... */
   public AuctionServer(int port) {
     this.port = port;
     this.isRunning = false;
