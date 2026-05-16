@@ -92,7 +92,6 @@ public class BiddingService {
 
       // TODO: Gọi DAO để lưu transaction vào cơ sở dữ liệu (Database)
 
-      // TODO: Kích hoạt Observer Pattern / Socket để thông báo realtime cho các client
       System.out.println("[BiddingService] Người dùng " + bidder.getUsername() +
           " đã đặt giá thành công " + bidAmount + " cho phiên " + auctionId);
 

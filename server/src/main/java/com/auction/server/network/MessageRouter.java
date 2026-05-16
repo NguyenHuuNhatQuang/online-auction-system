@@ -1,11 +1,20 @@
 package com.auction.server.network;
 
 import com.auction.common.dto.SocketMessage;
+import com.auction.common.models.Auction;
 import com.auction.common.models.Bidder;
+import com.auction.common.models.Item;
+import com.auction.common.models.Seller;
+import com.auction.server.factories.ItemFactory;
+import com.auction.server.services.AuctionManager;
 import com.auction.server.services.BiddingService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+
+import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.UUID;
 
 /**
  * Chịu trách nhiệm phân tích chuỗi JSON từ Client, điều hướng lệnh đến các Service tương ứng,
@@ -16,6 +25,7 @@ public class MessageRouter {
   private final BiddingService biddingService;
   private final ObjectMapper objectMapper;
   private final AuctionServer server;
+  private final AuctionManager auctionManager;
 
   /**
    * Khởi tạo bộ định tuyến thông điệp.
@@ -26,6 +36,7 @@ public class MessageRouter {
     this.server = server;
     this.biddingService = new BiddingService();
     this.objectMapper = new ObjectMapper();
+    this.auctionManager = AuctionManager.getInstance();
   }
 
   /**
@@ -43,6 +54,9 @@ public class MessageRouter {
       switch (message.getAction()) {
         case "PLACE_BID":
           handlePlaceBid(message.getPayload(), client);
+          break;
+        case "CREATE_AUCTION":
+          handleCreateAuction(message.getPayload(), client);
           break;
         // Các case khác như "LOGIN", "GET_AUCTIONS"... sẽ được thêm vào sau
         default:
@@ -90,6 +104,55 @@ public class MessageRouter {
       // Bắt các lỗi nghiệp vụ từ BiddingService (Ví dụ: "Giá đặt phải cao hơn hiện tại")
       // và báo lỗi về CỤ THỂ cho người vừa đặt sai, không broadcast lỗi này cho người khác.
       sendError(client, e.getMessage());
+    }
+  }
+
+  /**
+   * Xử lý logic tạo phiên đấu giá mới khi nhận được lệnh CREATE_AUCTION.
+   * Người gửi (Seller) truyền thông tin sản phẩm và thời gian đấu giá.
+   */
+  private void handleCreateAuction(String payloadJson, ClientHandler client) {
+    try {
+      // 1. Phân tích dữ liệu sản phẩm từ JSON
+      JsonNode payloadNode = objectMapper.readTree(payloadJson);
+      String itemType = payloadNode.get("itemType").asText(); // "ELECTRONICS" hoặc "ART"
+      String itemName = payloadNode.get("itemName").asText();
+      String itemDesc = payloadNode.get("itemDesc").asText();
+      double startPrice = payloadNode.get("startPrice").asDouble();
+      int durationMinutes = payloadNode.get("durationMinutes").asInt(); // Thời lượng phiên (phút)
+
+      // Thông tin người bán (Thực tế sẽ lấy từ Token hoặc Session đăng nhập)
+      String sellerId = payloadNode.get("sellerId").asText();
+      String sellerName = payloadNode.get("sellerName").asText();
+
+      // 2. Sử dụng Factory để tạo Sản phẩm
+      Item item = ItemFactory.createItem(itemType, itemName, itemDesc, new HashMap<>());
+
+      // 3. Khởi tạo Phiên đấu giá
+      Seller seller = new Seller(sellerId, sellerName, "");
+      LocalDateTime startTime = LocalDateTime.now();
+      LocalDateTime endTime = startTime.plusMinutes(durationMinutes);
+      String auctionId = "AUC_" + UUID.randomUUID().toString().substring(0, 8);
+
+      Auction newAuction = new Auction(auctionId, item, seller, startPrice, startTime, endTime);
+      newAuction.setStatus("RUNNING");
+
+      // 4. Lưu vào hệ thống quản lý trung tâm
+      auctionManager.addAuction(newAuction);
+
+      // 5. Gửi thông báo thành công cho Seller
+      String responsePayload = String.format("{\"auctionId\":\"%s\", \"status\":\"RUNNING\"}", auctionId);
+      SocketMessage successMsg = new SocketMessage("AUCTION_CREATED", responsePayload);
+      client.sendMessage(objectMapper.writeValueAsString(successMsg));
+
+      // (Tùy chọn) Phát sóng cho mọi người biết có hàng mới lên sàn
+      SocketMessage broadcastMsg = new SocketMessage("NEW_AUCTION_BROADCAST", responsePayload);
+      server.broadcastMessage(objectMapper.writeValueAsString(broadcastMsg));
+
+      System.out.println("[MessageRouter] Đã tạo phiên đấu giá mới: " + auctionId);
+
+    } catch (Exception e) {
+      sendError(client, "Lỗi khi tạo phiên đấu giá: " + e.getMessage());
     }
   }
 

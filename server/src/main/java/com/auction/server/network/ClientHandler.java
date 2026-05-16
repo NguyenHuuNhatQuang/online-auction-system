@@ -26,19 +26,21 @@ public class ClientHandler implements Runnable {
 
   @Override
   public void run() {
+    // Khởi tạo MessageRouter cho client này (Nó dùng chung AuctionServer)
+    MessageRouter router = new MessageRouter(server);
+
     try {
       out = new PrintWriter(clientSocket.getOutputStream(), true);
       in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
 
       System.out.println("[ClientHandler] Client đã kết nối: " + clientId);
 
-      // Lắng nghe liên tục các yêu cầu (JSON) gửi từ Client
       String inputLine;
+      // Lắng nghe liên tục các yêu cầu (JSON) gửi từ Client
       while ((inputLine = in.readLine()) != null) {
         System.out.println("[Nhận từ " + clientId + "]: " + inputLine);
 
-        // TODO: Chuyển đổi inputLine (JSON) thành đối tượng Request,
-        // sau đó gọi BiddingService để xử lý.
+        router.route(inputLine, this);
       }
 
     } catch (IOException e) {
