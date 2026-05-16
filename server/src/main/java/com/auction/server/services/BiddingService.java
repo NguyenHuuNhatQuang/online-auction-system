@@ -103,4 +103,38 @@ public class BiddingService {
       lock.unlock();
     }
   }
+
+  /**
+   * Kiểm tra và tự động đóng phiên đấu giá nếu đã hết thời gian.
+   * Sử dụng cơ chế tryLock() để không làm treo luồng quét nếu có người đang đặt giá.
+   *
+   * @param auctionId ID của phiên đấu giá cần kiểm tra.
+   * @return Trả về đối tượng Auction nếu nó VỪA MỚI được đóng thành công, ngược lại trả về null.
+   */
+  public Auction checkAndCloseIfExpired(String auctionId) {
+    Auction auction = auctionManager.getAuction(auctionId);
+
+    // Bỏ qua nhanh nếu không tồn tại hoặc đã đóng
+    if (auction == null || !"RUNNING".equals(auction.getStatus())) {
+      return null;
+    }
+
+    ReentrantLock lock = getLockForAuction(auctionId);
+
+    // Sử dụng tryLock(): Nếu có Bidder nào đó đang giữ khóa để đặt giá,
+    // Scheduler sẽ không đứng chờ mà lập tức bỏ qua (sẽ kiểm tra lại ở giây tiếp theo).
+    if (lock.tryLock()) {
+      try {
+        // Kiểm tra lại trạng thái và thời gian sau khi đã vào trong vùng an toàn (Critical Section)
+        if ("RUNNING".equals(auction.getStatus()) && LocalDateTime.now().isAfter(auction.getEndTime())) {
+          auction.setStatus("FINISHED");
+          return auction; // Trả về để Scheduler biết mà thông báo cho Client
+        }
+      } finally {
+        lock.unlock(); // Luôn giải phóng khóa
+      }
+    }
+
+    return null;
+  }
 }

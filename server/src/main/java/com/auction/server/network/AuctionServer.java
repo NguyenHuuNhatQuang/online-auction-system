@@ -1,5 +1,7 @@
 package com.auction.server.network;
 
+import com.auction.server.services.AuctionScheduler;
+import com.auction.server.services.BiddingService;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -9,66 +11,91 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 /**
- * Máy chủ quản lý các kết nối Socket.
- * Đóng vai trò là Subject trong Observer Pattern để phát sóng thông điệp Realtime.
+ * Máy chủ trung tâm chịu trách nhiệm quản lý kết nối mạng qua giao thức Socket.
+ * Đóng vai trò cấu nối nhận yêu cầu từ các Client và phát sóng các sự kiện
+ * cập nhật giá theo thời gian thực (Realtime Update) áp dụng mẫu thiết kế Observer.
  */
 public class AuctionServer {
 
+  /** Cổng mạng (Port) mà máy chủ sẽ lắng nghe kết nối. */
   private final int port;
+
+  /** Trạng thái hoạt động của máy chủ (true: đang chạy, false: đã dừng). */
   private boolean isRunning;
 
-  // Thread Pool tối ưu việc xử lý nhiều luồng kết nối cùng lúc
+  /** Quản lý tập hợp các luồng (Thread Pool) phục vụ luồng xử lý I/O của Client. */
   private final ExecutorService threadPool;
 
-  // Lưu trữ danh sách các Client đang trực tuyến một cách an toàn (Thread-safe)
+  /** Danh sách lưu trữ an toàn đa luồng chứa các kết nối Client đang trực tuyến. */
   private final Set<ClientHandler> activeClients;
 
+  /** Bộ định thời chạy ngầm tự động quét và đóng các phiên đấu giá hết hạn. */
+  private AuctionScheduler scheduler;
+
+  /**
+   * Khởi tạo một máy chủ đấu giá mới với cổng mạng xác định.
+   * Mặc định cấp phát Thread Pool tối đa 100 kết nối đồng thời.
+   *
+   * @param port Cổng mạng mạng máy chủ sẽ sử dụng để lắng nghe kết nối.
+   */
   public AuctionServer(int port) {
     this.port = port;
     this.isRunning = false;
-    // Giới hạn phục vụ tối đa 100 người dùng cùng lúc
     this.threadPool = Executors.newFixedThreadPool(100);
     this.activeClients = ConcurrentHashMap.newKeySet();
   }
 
   /**
-   * Khởi động máy chủ, lắng nghe các kết nối đến.
+   * Khởi động máy chủ, kích hoạt bộ quét thời gian ngầm và bắt đầu vòng lặp
+   * chấp nhận (accept) các kết nối Socket đi vào từ phía Client.
    */
   public void startServer() {
-    isRunning = true;
+    this.isRunning = true;
+
+    // Khởi tạo và kích hoạt bộ quét thời gian đấu giá tự động
+    BiddingService biddingService = new BiddingService();
+    this.scheduler = new AuctionScheduler(biddingService, this);
+    this.scheduler.start();
+
     try (ServerSocket serverSocket = new ServerSocket(port)) {
-      System.out.println("[AuctionServer] Máy chủ đang chạy tại port " + port + "...");
+      System.out.println("[AuctionServer] Máy chủ đang hoạt động tại port " + port + "...");
 
       while (isRunning) {
-        // Lệnh chặn (Blocking): Chờ cho đến khi có một Client gọi tới
+        // Lệnh chặn (Blocking): Chờ cho đến khi có một kết nối từ Client gửi tới
         Socket clientSocket = serverSocket.accept();
 
-        // Khởi tạo handler cho Client mới
+        // Khởi tạo đối tượng xử lý riêng biệt cho Client mới này
         ClientHandler clientHandler = new ClientHandler(clientSocket, this);
         activeClients.add(clientHandler);
 
-        // Ném handler vào ThreadPool để nó chạy nền, máy chủ tiếp tục quay lại trực cổng đón người mới
+        // Giao việc giao tiếp I/O cho một luồng độc lập trong Thread Pool quản lý
         threadPool.execute(clientHandler);
       }
     } catch (IOException e) {
-      System.err.println("[AuctionServer] Lỗi khởi động máy chủ: " + e.getMessage());
+      System.err.println("[AuctionServer] Lỗi phát sinh trên Server Socket: " + e.getMessage());
     } finally {
       stopServer();
     }
   }
 
   /**
-   * Gỡ bỏ một Client khỏi danh sách trực tuyến khi họ thoát.
+   * Loại bỏ một Client Handler khỏi danh sách quản lý trực tuyến.
+   * Thường được gọi khi Client ngắt kết nối hoặc xảy ra sự cố đường truyền.
+   *
+   * @param clientHandler Đối tượng xử lý kết nối cần gỡ bỏ.
    */
   public void removeClient(ClientHandler clientHandler) {
-    activeClients.remove(clientHandler);
+    if (clientHandler != null) {
+      activeClients.remove(clientHandler);
+    }
   }
 
   /**
-   * REALTIME UPDATE: Gửi thông điệp (ví dụ: thông báo có người vừa đặt giá) tới TẤT CẢ các Client.
-   * Đây chính là cơ chế để thực hiện chức năng Push/Observer Pattern từ máy chủ.
+   * Cơ chế cập nhật thời gian thực (Realtime Broadcast).
+   * Gửi một thông điệp chuỗi (thường là định dạng JSON) tới TẤT CẢ các Client
+   * đang kết nối trực tuyến với hệ thống mà không cần cơ chế Polling lặp lại.
    *
-   * @param message Chuỗi dữ liệu (JSON) cần phát sóng.
+   * @param message Chuỗi thông điệp cần phát sóng trên toàn hệ thống công cộng.
    */
   public void broadcastMessage(String message) {
     for (ClientHandler client : activeClients) {
@@ -77,11 +104,22 @@ public class AuctionServer {
   }
 
   /**
-   * Đóng máy chủ và giải phóng bộ nhớ.
+   * Ngắt hoạt động của máy chủ một cách an toàn.
+   * Tiến hành thu hồi tài nguyên luồng của Thread Pool và tắt bộ quét thời gian.
    */
   public void stopServer() {
-    isRunning = false;
-    threadPool.shutdown();
-    System.out.println("[AuctionServer] Đã tắt máy chủ.");
+    this.isRunning = false;
+
+    // Hủy cấp phát tài nguyên luồng chạy ngầm để tránh rò rỉ bộ nhớ (Memory Leak)
+    if (scheduler != null) {
+      scheduler.stop();
+    }
+
+    // Tắt Thread Pool xử lý kết nối mạng
+    if (threadPool != null && !threadPool.isShutdown()) {
+      threadPool.shutdown();
+    }
+
+    System.out.println("[AuctionServer] Máy chủ đã dừng hoạt động an toàn.");
   }
 }
