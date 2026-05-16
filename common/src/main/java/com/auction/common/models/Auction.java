@@ -43,11 +43,25 @@ public class Auction extends Entity {
   }
 
   // --- Getters cho dữ liệu tĩnh ---
-  public Item getItem() { return item; }
-  public Seller getSeller() { return seller; }
-  public double getStartPrice() { return startPrice; }
-  public LocalDateTime getStartTime() { return startTime; }
-  public LocalDateTime getEndTime() { return endTime; }
+  public Item getItem() {
+    return item;
+  }
+
+  public Seller getSeller() {
+    return seller;
+  }
+
+  public double getStartPrice() {
+    return startPrice;
+  }
+
+  public LocalDateTime getStartTime() {
+    return startTime;
+  }
+
+  public LocalDateTime getEndTime() {
+    return endTime;
+  }
 
   // --- Getters / Setters cho dữ liệu động (Cần Thread-safe) ---
 

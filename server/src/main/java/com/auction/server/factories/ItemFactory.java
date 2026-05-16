@@ -3,7 +3,6 @@ package com.auction.server.factories;
 import com.auction.common.models.Art;
 import com.auction.common.models.Electronics;
 import com.auction.common.models.Item;
-
 import java.util.Map;
 import java.util.UUID;
 

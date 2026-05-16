@@ -16,11 +16,11 @@ public class BidTransaction extends Entity {
   /**
    * Khởi tạo giao dịch lịch sử.
    *
-   * @param id         Định danh giao dịch.
-   * @param auctionId  ID của phiên đấu giá liên quan.
-   * @param bidder     Người đã đặt giá.
-   * @param bidAmount  Số tiền đã đặt.
-   * @param timestamp  Thời điểm ghi nhận hệ thống.
+   * @param id        Định danh giao dịch.
+   * @param auctionId ID của phiên đấu giá liên quan.
+   * @param bidder    Người đã đặt giá.
+   * @param bidAmount Số tiền đã đặt.
+   * @param timestamp Thời điểm ghi nhận hệ thống.
    */
   public BidTransaction(String id, String auctionId, Bidder bidder,
                         double bidAmount, LocalDateTime timestamp) {
@@ -31,8 +31,19 @@ public class BidTransaction extends Entity {
     this.timestamp = timestamp;
   }
 
-  public String getAuctionId() { return auctionId; }
-  public Bidder getBidder() { return bidder; }
-  public double getBidAmount() { return bidAmount; }
-  public LocalDateTime getTimestamp() { return timestamp; }
+  public String getAuctionId() {
+    return auctionId;
+  }
+
+  public Bidder getBidder() {
+    return bidder;
+  }
+
+  public double getBidAmount() {
+    return bidAmount;
+  }
+
+  public LocalDateTime getTimestamp() {
+    return timestamp;
+  }
 }

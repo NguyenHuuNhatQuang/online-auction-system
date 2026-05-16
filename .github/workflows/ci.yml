@@ -1,0 +1,48 @@
+name: Java CI/CD with Maven (Google Style)
+
+# 1. Định nghĩa sự kiện kích hoạt (Trigger)
+on:
+  push:
+    branches: [ "master" ]      # Kích hoạt khi có code đẩy lên nhánh master
+  pull_request:
+    branches: [ "master" ]      # Kích hoạt khi có người tạo Pull Request vào master
+
+jobs:
+  build:
+    name: Validate, Test, and Package
+    runs-on: ubuntu-latest       # Chạy trên máy chủ ảo Ubuntu mới nhất của GitHub
+
+    steps:
+      # Bước 1: Kéo (Checkout) mã nguồn từ GitHub xuống máy chủ ảo
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      # Bước 2: Cài đặt môi trường Java 17
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'  # Bản phân phối JDK ổn định (Eclipse Temurin)
+          cache: maven             # Lưu cache Maven để các lần build sau nhanh hơn
+
+      # Bước 3: Kiểm tra Code Style (Google Java Style)
+      # Lệnh này sẽ rà soát toàn bộ code, nếu không đúng chuẩn Google, pipeline sẽ dừng lại (Failed)
+      - name: Check Code Style
+        run: mvn checkstyle:check
+
+      # Bước 4: Validate, Compile, Test, và Package thành file .jar
+      # Lệnh 'package' của Maven sẽ tự động chạy qua các phase: validate -> compile -> test -> package
+      - name: Build and Test Project
+        run: mvn clean package
+
+      # Bước 5 (Tùy chọn): Lưu lại các file .jar sau khi build thành công để có thể tải về từ GitHub
+      - name: Upload Artifacts (JAR files)
+        uses: actions/upload-artifact@v4
+        if: success()              # Chỉ upload nếu các bước trên thành công
+        with:
+          name: auction-system-jars
+          path: |
+            server/target/*.jar
+            client/target/*.jar
+            common/target/*.jar
+          retention-days: 7        # Giữ file trên GitHub trong 7 ngày
