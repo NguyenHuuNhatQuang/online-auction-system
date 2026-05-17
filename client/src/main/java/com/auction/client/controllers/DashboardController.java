@@ -1,5 +1,8 @@
 package com.auction.client.controllers;
 
+import com.auction.common.dto.SocketMessage;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.auction.client.core.SceneManager;
 import com.auction.client.network.NetworkClient;
 import javafx.application.Platform;
@@ -15,6 +18,7 @@ public class DashboardController {
 
   private NetworkClient networkClient;
   private String currentUser;
+  private final ObjectMapper objectMapper = new ObjectMapper();
 
   @FXML
   public void initialize() {
@@ -33,11 +37,45 @@ public class DashboardController {
    * Xử lý tin nhắn từ Server trả về (Được gọi từ luồng mạng ngầm)
    */
   private void handleServerMessage(String jsonMessage) {
-    // Tạm thời in ra console để kiểm tra
     System.out.println("[Dashboard] Nhận thông điệp: " + jsonMessage);
 
-    // TODO: Bóc tách JSON (Jackson) để cập nhật danh sách auctionListView
-    // Lưu ý: Mọi thao tác cập nhật UI đều phải bọc trong Platform.runLater()
+    try {
+      // Phân tích JSON thành đối tượng SocketMessage
+      SocketMessage message = objectMapper.readValue(jsonMessage, SocketMessage.class);
+
+      // Bất kỳ thao tác nào làm thay đổi giao diện đều PHẢI nằm trong Platform.runLater
+      Platform.runLater(() -> {
+        try {
+          switch (message.getAction()) {
+            case "NEW_AUCTION_BROADCAST":
+            case "AUCTION_CREATED":
+              // Bóc tách payload bên trong để lấy Auction ID
+              JsonNode payloadNode = objectMapper.readTree(message.getPayload());
+              String auctionId = payloadNode.get("auctionId").asText();
+
+              // Thêm vào danh sách hiển thị
+              String displayText = "Phiên đấu giá: " + auctionId;
+              if (!auctionListView.getItems().contains(displayText)) {
+                auctionListView.getItems().add(displayText);
+              }
+              break;
+
+            case "SERVER_DISCONNECTED":
+              showAlert("Mất kết nối", "Máy chủ đã dừng hoạt động. Vui lòng thoát ứng dụng.");
+              break;
+
+            case "ERROR":
+              showAlert("Lỗi hệ thống", message.getPayload());
+              break;
+          }
+        } catch (Exception e) {
+          System.err.println("Lỗi xử lý payload: " + e.getMessage());
+        }
+      });
+
+    } catch (Exception e) {
+      System.err.println("Không thể parse JSON: " + jsonMessage);
+    }
   }
 
   @FXML

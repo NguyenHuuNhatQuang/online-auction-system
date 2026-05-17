@@ -58,7 +58,10 @@ public class MessageRouter {
         case "CREATE_AUCTION":
           handleCreateAuction(message.getPayload(), client);
           break;
-        // Các case khác như "LOGIN", "GET_AUCTIONS"... sẽ được thêm vào sau
+        case "CLIENT_DISCONNECT": // THÊM CASE NÀY
+          System.out.println("[Router] Nhận yêu cầu ngắt kết nối từ Client.");
+          client.disconnect(); // Chủ động ngắt Client này ra khỏi Server
+          break;
         default:
           sendError(client, "Hành động không được hệ thống hỗ trợ: " + message.getAction());
           break;

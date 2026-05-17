@@ -32,9 +32,13 @@ public class AuctionClientApp extends Application {
 
   @Override
   public void stop() {
+    System.out.println("[Client] Đang tắt ứng dụng...");
     if (networkClient != null) {
       networkClient.disconnect();
     }
+
+    // Ép máy ảo Java tắt hoàn toàn, tiêu diệt mọi luồng chạy ngầm đang bị kẹt
+    System.exit(0);
   }
 
   public static void main(String[] args) {

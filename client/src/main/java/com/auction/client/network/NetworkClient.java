@@ -88,11 +88,18 @@ public class NetworkClient {
    */
   public void disconnect() {
     try {
-      if (in != null) in.close();
+      // 1. THÊM DÒNG NÀY: Gửi thông điệp chia tay lên Server trước khi ngắt mạng
+      sendMessage("{\"action\":\"CLIENT_DISCONNECT\", \"payload\":\"\"}");
+
+      // Đợi 50 mili-giây để đảm bảo gói tin kịp đẩy đi trước khi rút cáp
+      Thread.sleep(50);
+
+      // 2. Đóng các luồng vật lý
       if (out != null) out.close();
+      if (in != null) in.close();
       if (socket != null && !socket.isClosed()) socket.close();
       System.out.println("[NetworkClient] Đã chủ động đóng kết nối.");
-    } catch (IOException e) {
+    } catch (Exception e) {
       System.err.println("[NetworkClient] Lỗi khi đóng kết nối: " + e.getMessage());
     }
   }

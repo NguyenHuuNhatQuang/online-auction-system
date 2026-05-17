@@ -17,6 +17,7 @@ public class ClientHandler implements Runnable {
   private PrintWriter out;
   private BufferedReader in;
   private String clientId;
+  private boolean isClosed = false;
 
   public ClientHandler(Socket clientSocket, AuctionServer server) {
     this.clientSocket = clientSocket;
@@ -46,6 +47,7 @@ public class ClientHandler implements Runnable {
     } catch (IOException e) {
       System.out.println("[ClientHandler] Lỗi giao tiếp với client " + clientId + ": " + e.getMessage());
     } finally {
+      // Đảm bảo dù lỗi hay không, khi vòng lặp kết thúc, Client phải bị xóa khỏi Server
       disconnect();
     }
   }
@@ -65,21 +67,24 @@ public class ClientHandler implements Runnable {
    * Hàm này được để public để Server có thể chủ động gọi khi tắt hệ thống.
    */
   public void disconnect() {
+    // CHIẾC KHIÊN BẢO VỆ: Nếu đã đóng rồi thì lập tức quay xe, không làm gì thêm!
+    if (isClosed) {
+      return;
+    }
+    isClosed = true; // Đánh dấu là đã đóng để các luồng sau không gọi lại nữa
+
     try {
-      if (in != null) {
-        in.close();
-      }
-      if (out != null) {
-        out.close();
-      }
+      if (in != null) in.close();
+      if (out != null) out.close();
       if (clientSocket != null && !clientSocket.isClosed()) {
         clientSocket.close();
       }
-      // Báo cho Server biết để gỡ khỏi danh sách quản lý
+
+      // Gỡ khỏi danh sách Server
       server.removeClient(this);
       System.out.println("[ClientHandler] Đã ngắt kết nối Client: " + clientId);
-    } catch (IOException e) {
-      System.err.println("[ClientHandler] Lỗi khi đóng kết nối Client " + clientId + ": " + e.getMessage());
+    } catch (Exception e) {
+      System.err.println("[ClientHandler] Lỗi khi đóng kết nối: " + e.getMessage());
     }
   }
 }
