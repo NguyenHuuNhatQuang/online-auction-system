@@ -130,10 +130,14 @@ class MessageRouterTest {
     // 1. Chuẩn bị số lượng phiên đấu giá trước khi test (Đã có 1 cái từ setUp)
     int initialAuctions = auctionManager.getAllAuctions().size();
 
-    // 2. Chuẩn bị chuỗi JSON mô phỏng lệnh tạo phiên đấu giá từ Seller
+    // THÊM MỚI: Giả lập việc Seller đã thêm sản phẩm vào kho (ItemManager) trước đó
+    com.auction.common.models.Item testItem = new com.auction.common.models.Electronics("item_mock_999", "Laptop Gaming", "Mới 100%", 24);
+    com.auction.server.services.ItemManager.getInstance().addItem(testItem, "seller_99");
+
+    // 2. Chuẩn bị chuỗi JSON mô phỏng lệnh tạo phiên (CẬP NHẬT: Dùng itemId thay vì itemType/itemName)
     String createAuctionJson = "{"
         + "\"action\": \"CREATE_AUCTION\","
-        + "\"payload\": \"{\\\"itemType\\\":\\\"ELECTRONICS\\\", \\\"itemName\\\":\\\"Laptop Gaming\\\", \\\"itemDesc\\\":\\\"Mới 100%\\\", \\\"startPrice\\\": 1500.0, \\\"durationMinutes\\\": 60, \\\"sellerId\\\":\\\"seller_99\\\", \\\"sellerName\\\":\\\"John Doe\\\"}\""
+        + "\"payload\": \"{\\\"itemId\\\":\\\"item_mock_999\\\", \\\"startPrice\\\": 1500.0, \\\"durationMinutes\\\": 60, \\\"sellerId\\\":\\\"seller_99\\\", \\\"sellerName\\\":\\\"John Doe\\\"}\""
         + "}";
 
     // 3. Thực thi việc định tuyến
@@ -154,5 +158,44 @@ class MessageRouterTest {
     ArgumentCaptor<String> broadcastCaptor = ArgumentCaptor.forClass(String.class);
     verify(mockServer).broadcastMessage(broadcastCaptor.capture());
     assertTrue(broadcastCaptor.getValue().contains("NEW_AUCTION_BROADCAST"), "Hệ thống phải phát sóng sự kiện này");
+  }
+
+  @Test
+  @DisplayName("Định tuyến đúng khi gửi JSON lệnh LOGIN hợp lệ")
+  void testRoute_Login_Success() {
+    String loginJson = "{"
+        + "\"action\": \"LOGIN\","
+        + "\"payload\": \"{\\\"username\\\":\\\"alice\\\", \\\"password\\\":\\\"123\\\"}\""
+        + "}";
+
+    messageRouter.route(loginJson, mockClient);
+
+    ArgumentCaptor<String> messageCaptor = ArgumentCaptor.forClass(String.class);
+    verify(mockClient).sendMessage(messageCaptor.capture());
+
+    String responseToClient = messageCaptor.getValue();
+    assertTrue(responseToClient.contains("LOGIN_SUCCESS"), "Phải phản hồi đăng nhập thành công");
+    assertTrue(responseToClient.contains("BIDDER"), "Phải chứa thông tin quyền hạn của người dùng (Role)");
+  }
+
+  @Test
+  @DisplayName("Định tuyến và trả về danh sách phiên đấu giá khi nhận lệnh GET_ACTIVE_AUCTIONS")
+  void testRoute_GetActiveAuctions() {
+    // 1. Chuẩn bị dữ liệu: Từ hàm setUp() đã có sẵn 1 phiên đấu giá (auction_test_1) đang RUNNING
+    String requestJson = "{"
+        + "\"action\": \"GET_ACTIVE_AUCTIONS\","
+        + "\"payload\": \"\""
+        + "}";
+
+    // 2. Định tuyến
+    messageRouter.route(requestJson, mockClient);
+
+    // 3. Kiểm chứng
+    ArgumentCaptor<String> messageCaptor = ArgumentCaptor.forClass(String.class);
+    verify(mockClient).sendMessage(messageCaptor.capture());
+
+    String responseToClient = messageCaptor.getValue();
+    assertTrue(responseToClient.contains("ACTIVE_AUCTIONS_LIST"), "Phải trả về đúng Action báo danh sách");
+    assertTrue(responseToClient.contains("auction_test_1"), "Phải chứa ID phiên đấu giá đang mở");
   }
 }

@@ -7,31 +7,41 @@ import com.auction.client.core.SceneManager;
 import com.auction.client.network.NetworkClient;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
-import javafx.scene.control.Alert;
-import javafx.scene.control.Label;
-import javafx.scene.control.ListView;
-import javafx.scene.control.TextField;
+import javafx.scene.control.*;
+import javafx.scene.layout.*;
 
 public class DashboardController {
 
   @FXML private Label welcomeLabel;
   @FXML private ListView<String> auctionListView;
-  @FXML private TextField itemNameField;
-  @FXML private TextField durationField;
+
+  @FXML private HBox createAuctionInputBox;
+  @FXML private Button createAuctionBtn;
 
   private NetworkClient networkClient;
   private String currentUser;
   private final ObjectMapper objectMapper = new ObjectMapper();
 
+
   @FXML
   public void initialize() {
     this.currentUser = SceneManager.getInstance().getCurrentUser();
+    String userRole = SceneManager.getInstance().getUserRole();
     this.networkClient = SceneManager.getInstance().getNetworkClient();
-    welcomeLabel.setText("Sảnh Chờ Đấu Giá - Xin chào " + currentUser);
+    welcomeLabel.setText("Sảnh Chờ Đấu Giá - Xin chào " + currentUser + " (" + userRole + ")");
     networkClient.setOnMessageReceived(this::handleServerMessage);
 
-    // THÊM DÒNG NÀY: Vừa mở màn hình là hỏi Server ngay danh sách hiện tại
+    if ("BIDDER".equalsIgnoreCase(userRole)) {
+      createAuctionBtn.setVisible(false);
+      createAuctionBtn.setManaged(false);
+    }
+
     networkClient.sendMessage("{\"action\":\"GET_ACTIVE_AUCTIONS\", \"payload\":\"\"}");
+  }
+
+  @FXML
+  private void handleGoToManageProducts() {
+    SceneManager.getInstance().switchScene("/fxml/product_management.fxml", "Kho hàng của tôi - " + currentUser);
   }
 
   /**
@@ -85,45 +95,6 @@ public class DashboardController {
 
     } catch (Exception e) {
       System.err.println("Không thể parse JSON: " + jsonMessage);
-    }
-  }
-
-  @FXML
-  private void handleCreateAuction() {
-    String itemName = itemNameField.getText().trim();
-    String durationText = durationField.getText().trim();
-
-    // 1. Kiểm tra dữ liệu đầu vào cơ bản
-    if (itemName.isEmpty() || durationText.isEmpty()) {
-      showAlert("Thiếu thông tin", "Vui lòng nhập đầy đủ Tên sản phẩm và Thời gian đấu giá!");
-      return;
-    }
-
-    try {
-      int durationMinutes = Integer.parseInt(durationText);
-      if (durationMinutes <= 0) {
-        showAlert("Lỗi nhập liệu", "Thời gian đấu giá phải lớn hơn 0 phút!");
-        return;
-      }
-
-      // 2. Đóng gói JSON payload động khớp với cấu hình nhận của Server (MessageRouter)
-      // Để tối giản, các thông số phụ như itemType, itemDesc, startPrice ta tạm fix mặc định
-      String payload = String.format(
-          "{\"itemType\":\"ELECTRONICS\", \"itemName\":\"%s\", \"itemDesc\":\"Sản phẩm đấu giá nhanh\", \"startPrice\":100.0, \"durationMinutes\":%d, \"sellerId\":\"%s\", \"sellerName\":\"%s\"}",
-          itemName, durationMinutes, currentUser, currentUser
-      );
-
-      String requestJson = String.format("{\"action\":\"CREATE_AUCTION\", \"payload\":%s}", escapeJson(payload));
-
-      // 3. Bắn lệnh lên Server
-      networkClient.sendMessage(requestJson);
-
-      // Xóa chữ trong ô nhập liệu để sẵn sàng cho lần tạo sau
-      itemNameField.clear();
-      durationField.clear();
-
-    } catch (NumberFormatException e) {
-      showAlert("Lỗi nhập liệu", "Thời gian đấu giá phải là một số nguyên hợp lệ (Ví dụ điền: 1 hoặc 2)!");
     }
   }
 

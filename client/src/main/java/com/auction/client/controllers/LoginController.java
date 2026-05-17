@@ -1,30 +1,73 @@
 package com.auction.client.controllers;
 
 import com.auction.client.core.SceneManager;
+import com.auction.common.dto.SocketMessage;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
+import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
 
 public class LoginController {
 
+  @FXML private TextField usernameField;
+  @FXML private PasswordField passwordField; // Khai báo thêm password
+
+  private final ObjectMapper objectMapper = new ObjectMapper();
+
   @FXML
-  private TextField usernameField;
+  public void initialize() {
+    // Vừa vào màn hình login, giành quyền lắng nghe kết quả đăng nhập từ Server
+    SceneManager.getInstance().getNetworkClient().setOnMessageReceived(this::handleServerResponse);
+  }
 
   @FXML
   private void handleLogin() {
     String username = usernameField.getText().trim();
+    String password = passwordField.getText().trim();
 
-    if (username.isEmpty()) {
-      showAlert("Lỗi", "Vui lòng nhập tên của bạn để tiếp tục!");
+    if (username.isEmpty() || password.isEmpty()) {
+      showAlert("Lỗi", "Vui lòng nhập đầy đủ tên đăng nhập và mật khẩu!");
       return;
     }
 
-    // Lưu tên người dùng vào SceneManager để dùng sau này
-    SceneManager.getInstance().setCurrentUser(username);
+    // Đóng gói JSON gửi yêu cầu đăng nhập
+    String payload = String.format("{\"username\":\"%s\", \"password\":\"%s\"}", username, password);
+    String request = String.format("{\"action\":\"LOGIN\", \"payload\":%s}", escapeJson(payload));
 
-    // Chuyển sang màn hình Dashboard (Chúng ta sẽ tạo file này ở bước kế tiếp)
-    System.out.println("[UI] Người dùng đăng nhập: " + username);
-    SceneManager.getInstance().switchScene("/fxml/dashboard.fxml", "Sảnh Chờ - " + username);
+    SceneManager.getInstance().getNetworkClient().sendMessage(request);
+  }
+
+  private void handleServerResponse(String jsonMessage) {
+    try {
+      SocketMessage message = objectMapper.readValue(jsonMessage, SocketMessage.class);
+
+      Platform.runLater(() -> {
+        try {
+          if ("LOGIN_SUCCESS".equals(message.getAction())) {
+            // Bóc tách dữ liệu Server trả về
+            JsonNode payloadNode = objectMapper.readTree(message.getPayload());
+            String username = payloadNode.get("username").asText();
+            String role = payloadNode.get("role").asText();
+
+            // Lưu thông tin vào phiên làm việc (Session)
+            SceneManager.getInstance().setCurrentUser(username);
+            SceneManager.getInstance().setUserRole(role);
+
+            // Chuyển trang
+            SceneManager.getInstance().switchScene("/fxml/dashboard.fxml", "Sảnh Chờ - " + username + " (" + role + ")");
+          } else if ("ERROR".equals(message.getAction())) {
+            showAlert("Đăng nhập thất bại", message.getPayload());
+          }
+        } catch (Exception e) {
+          e.printStackTrace();
+        }
+      });
+    } catch (Exception e) {
+      System.err.println("Lỗi parse JSON Login: " + e.getMessage());
+    }
   }
 
   private void showAlert(String title, String message) {
@@ -33,5 +76,9 @@ public class LoginController {
     alert.setHeaderText(null);
     alert.setContentText(message);
     alert.showAndWait();
+  }
+
+  private String escapeJson(String raw) {
+    return "\"" + raw.replace("\"", "\\\"") + "\"";
   }
 }
