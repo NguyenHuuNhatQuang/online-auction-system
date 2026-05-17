@@ -87,4 +87,13 @@ public class NetworkClient {
       System.err.println("[NetworkClient] Lỗi khi đóng kết nối: " + e.getMessage());
     }
   }
+
+  /**
+   * Cập nhật lại hàm xử lý tin nhắn.
+   * Giúp mỗi màn hình (Login, Dashboard, AuctionRoom) có thể tự giành quyền
+   * xử lý tin nhắn từ Server theo cách riêng của nó.
+   */
+  public void setOnMessageReceived(Consumer<String> onMessageReceived) {
+    this.onMessageReceived = onMessageReceived;
+  }
 }
