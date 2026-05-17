@@ -32,6 +32,8 @@ public class AuctionServer {
   /** Bộ định thời chạy ngầm tự động quét và đóng các phiên đấu giá hết hạn. */
   private AuctionScheduler scheduler;
 
+  private ServerSocket serverSocket;
+
   /**
    * Khởi tạo một máy chủ đấu giá mới với cổng mạng xác định.
    * Mặc định cấp phát Thread Pool tối đa 100 kết nối đồng thời.
@@ -57,22 +59,21 @@ public class AuctionServer {
     this.scheduler = new AuctionScheduler(biddingService, this);
     this.scheduler.start();
 
-    try (ServerSocket serverSocket = new ServerSocket(port)) {
+    try {
+      this.serverSocket = new ServerSocket(port);
       System.out.println("[AuctionServer] Máy chủ đang hoạt động tại port " + port + "...");
 
       while (isRunning) {
-        // Lệnh chặn (Blocking): Chờ cho đến khi có một kết nối từ Client gửi tới
         Socket clientSocket = serverSocket.accept();
-
-        // Khởi tạo đối tượng xử lý riêng biệt cho Client mới này
         ClientHandler clientHandler = new ClientHandler(clientSocket, this);
         activeClients.add(clientHandler);
-
-        // Giao việc giao tiếp I/O cho một luồng độc lập trong Thread Pool quản lý
         threadPool.execute(clientHandler);
       }
     } catch (IOException e) {
-      System.err.println("[AuctionServer] Lỗi phát sinh trên Server Socket: " + e.getMessage());
+      // Khi serverSocket bị ép đóng, hàm accept() sẽ văng lỗi SocketException và thoát ra an toàn
+      if (isRunning) {
+        System.err.println("[AuctionServer] Lỗi phát sinh trên Server Socket: " + e.getMessage());
+      }
     } finally {
       stopServer();
     }
@@ -108,28 +109,41 @@ public class AuctionServer {
    * Tiến hành chủ động ngắt kết nối tất cả Client, thu hồi tài nguyên luồng
    * và tắt bộ quét thời gian.
    */
-  public void stopServer() {
-    this.isRunning = false;
+    public void stopServer() {
+      this.isRunning = false;
 
-    // 1. Hủy cấp phát tài nguyên luồng chạy ngầm
-    if (scheduler != null) {
-      scheduler.stop();
-    }
-
-    // 2. Chủ động ngắt kết nối toàn bộ Client đang trực tuyến
-    if (!activeClients.isEmpty()) {
-      System.out.println("[AuctionServer] Đang ngắt kết nối " + activeClients.size() + " Client hiện tại...");
-      for (ClientHandler client : activeClients) {
-        client.disconnect();
+      // 1. ĐÓNG CỔNG MẠNG CHÍNH ĐỂ MỞ KHÓA HÀM accept()
+      // Đặt ngay tại đây để lập tức chặn người mới và giải phóng luồng chính.
+      try {
+        if (serverSocket != null && !serverSocket.isClosed()) {
+          serverSocket.close();
+        }
+      } catch (IOException e) {
+        System.err.println("Lỗi khi đóng ServerSocket: " + e.getMessage());
       }
-      activeClients.clear(); // Làm sạch bộ nhớ danh sách
-    }
 
-    // 3. Tắt Thread Pool xử lý kết nối mạng
-    if (threadPool != null && !threadPool.isShutdown()) {
-      threadPool.shutdown();
-    }
+      // 2. Hủy cấp phát tài nguyên luồng chạy ngầm (Scheduler)
+      if (scheduler != null) {
+        scheduler.stop();
+      }
 
-    System.out.println("[AuctionServer] Máy chủ đã dừng hoạt động an toàn.");
-  }
+// 3. Chủ động ngắt kết nối toàn bộ Client đang trực tuyến
+      if (activeClients != null && !activeClients.isEmpty()) {
+        System.out.println("[AuctionServer] Đang ngắt kết nối " + activeClients.size() + " Client hiện tại...");
+
+        broadcastMessage("{\"action\":\"SERVER_DISCONNECTED\", \"payload\":\"Máy chủ đang tắt hoặc bảo trì.\"}");
+
+        for (ClientHandler client : activeClients) {
+          client.disconnect();
+        }
+        activeClients.clear();
+      }
+
+      // 4. Tắt Thread Pool xử lý kết nối mạng
+      if (threadPool != null && !threadPool.isShutdown()) {
+        threadPool.shutdown();
+      }
+
+      System.out.println("[AuctionServer] Máy chủ đã dừng hoạt động an toàn.");
+    }
 }
