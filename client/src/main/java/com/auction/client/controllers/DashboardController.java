@@ -10,11 +10,14 @@ import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListView;
+import javafx.scene.control.TextField;
 
 public class DashboardController {
 
   @FXML private Label welcomeLabel;
   @FXML private ListView<String> auctionListView;
+  @FXML private TextField itemNameField;
+  @FXML private TextField durationField;
 
   private NetworkClient networkClient;
   private String currentUser;
@@ -87,14 +90,41 @@ public class DashboardController {
 
   @FXML
   private void handleCreateAuction() {
-    // Gửi lệnh tạo phiên đấu giá mẫu (Giả định bán một cái Laptop)
-    String payload = String.format(
-        "{\"itemType\":\"ELECTRONICS\", \"itemName\":\"Laptop Gaming\", \"itemDesc\":\"Mới 100%%\", \"startPrice\":1000.0, \"durationMinutes\":10, \"sellerId\":\"%s\", \"sellerName\":\"%s\"}",
-        currentUser, currentUser
-    );
+    String itemName = itemNameField.getText().trim();
+    String durationText = durationField.getText().trim();
 
-    String requestJson = String.format("{\"action\":\"CREATE_AUCTION\", \"payload\":%s}", escapeJson(payload));
-    networkClient.sendMessage(requestJson);
+    // 1. Kiểm tra dữ liệu đầu vào cơ bản
+    if (itemName.isEmpty() || durationText.isEmpty()) {
+      showAlert("Thiếu thông tin", "Vui lòng nhập đầy đủ Tên sản phẩm và Thời gian đấu giá!");
+      return;
+    }
+
+    try {
+      int durationMinutes = Integer.parseInt(durationText);
+      if (durationMinutes <= 0) {
+        showAlert("Lỗi nhập liệu", "Thời gian đấu giá phải lớn hơn 0 phút!");
+        return;
+      }
+
+      // 2. Đóng gói JSON payload động khớp với cấu hình nhận của Server (MessageRouter)
+      // Để tối giản, các thông số phụ như itemType, itemDesc, startPrice ta tạm fix mặc định
+      String payload = String.format(
+          "{\"itemType\":\"ELECTRONICS\", \"itemName\":\"%s\", \"itemDesc\":\"Sản phẩm đấu giá nhanh\", \"startPrice\":100.0, \"durationMinutes\":%d, \"sellerId\":\"%s\", \"sellerName\":\"%s\"}",
+          itemName, durationMinutes, currentUser, currentUser
+      );
+
+      String requestJson = String.format("{\"action\":\"CREATE_AUCTION\", \"payload\":%s}", escapeJson(payload));
+
+      // 3. Bắn lệnh lên Server
+      networkClient.sendMessage(requestJson);
+
+      // Xóa chữ trong ô nhập liệu để sẵn sàng cho lần tạo sau
+      itemNameField.clear();
+      durationField.clear();
+
+    } catch (NumberFormatException e) {
+      showAlert("Lỗi nhập liệu", "Thời gian đấu giá phải là một số nguyên hợp lệ (Ví dụ điền: 1 hoặc 2)!");
+    }
   }
 
   @FXML

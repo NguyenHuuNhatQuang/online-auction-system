@@ -64,8 +64,11 @@ public class MessageRouter {
           System.out.println("[Router] Nhận yêu cầu ngắt kết nối từ Client.");
           client.disconnect(); // Chủ động ngắt Client này ra khỏi Server
           break;
-        case "GET_ACTIVE_AUCTIONS": // THÊM CASE NÀY
+        case "GET_ACTIVE_AUCTIONS":
           handleGetActiveAuctions(client);
+          break;
+        case "GET_AUCTION_STATE":
+          handleGetAuctionState(message.getPayload(), client);
           break;
         default:
           sendError(client, "Hành động không được hệ thống hỗ trợ: " + message.getAction());
@@ -164,15 +167,36 @@ public class MessageRouter {
     }
   }
 
-  /**
-   * Hàm tiện ích để đóng gói và gửi thông báo lỗi về cho Client.
-   */
-  private void sendError(ClientHandler client, String errorMessage) {
+  private void handleGetAuctionState(String payloadJson, ClientHandler client) {
     try {
-      SocketMessage errorMsg = new SocketMessage("ERROR", errorMessage);
-      client.sendMessage(objectMapper.writeValueAsString(errorMsg));
-    } catch (JsonProcessingException e) {
-      e.printStackTrace(); // Log lỗi server nếu việc tạo JSON lỗi bị hỏng
+      JsonNode payloadNode = objectMapper.readTree(payloadJson);
+      String targetId = payloadNode.get("auctionId").asText();
+
+      // Lấy phiên đấu giá từ kho (Lưu ý: Giả định kho của bạn là HashMap dùng ID làm key)
+      Auction auction = AuctionManager.getInstance().getAllAuctions().stream()
+          .filter(a -> targetId.equals(a.getId()))
+          .findFirst()
+          .orElse(null);
+
+      if (auction != null) {
+        // Xác định người đang trả giá cao nhất (nếu chưa có ai thì để là "Chưa có")
+        String bidderName = "Chưa có";
+        // Lưu ý: Tùy vào cách bạn thiết kế model Auction, có thể bạn lưu Bidder object hoặc tên thẳng
+        // Dưới đây giả định bạn có thuộc tính highestBidder trong class Auction
+        if (auction.getHighestBidder() != null) {
+          bidderName = auction.getHighestBidder().getUsername();
+        }
+
+        String payload = String.format(
+            "{\"auctionId\":\"%s\", \"currentPrice\":%s, \"highestBidder\":\"%s\", \"status\":\"%s\"}",
+            auction.getId(), auction.getCurrentPrice(), bidderName, auction.getStatus()
+        );
+
+        String response = String.format("{\"action\":\"AUCTION_STATE\", \"payload\":%s}", escapeJson(payload));
+        client.sendMessage(response);
+      }
+    } catch (Exception e) {
+      System.err.println("[Router] Lỗi khi lấy trạng thái phiên: " + e.getMessage());
     }
   }
 
@@ -201,5 +225,17 @@ public class MessageRouter {
 
   private String escapeJson(String raw) {
     return "\"" + raw.replace("\"", "\\\"") + "\"";
+  }
+
+  /**
+   * Hàm tiện ích để đóng gói và gửi thông báo lỗi về cho Client.
+   */
+  private void sendError(ClientHandler client, String errorMessage) {
+    try {
+      SocketMessage errorMsg = new SocketMessage("ERROR", errorMessage);
+      client.sendMessage(objectMapper.writeValueAsString(errorMsg));
+    } catch (JsonProcessingException e) {
+      e.printStackTrace(); // Log lỗi server nếu việc tạo JSON lỗi bị hỏng
+    }
   }
 }

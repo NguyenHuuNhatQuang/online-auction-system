@@ -5,6 +5,7 @@
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.ListView?>
 <?import javafx.scene.control.Button?>
+<?import javafx.scene.control.TextField?>
 <?import javafx.geometry.Insets?>
 
 <VBox spacing="15.0" alignment="TOP_CENTER" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
@@ -17,6 +18,11 @@
     <Label fx:id="welcomeLabel" text="Sảnh Chờ Đấu Giá" style="-fx-font-size: 18px; -fx-font-weight: bold;"/>
 
     <ListView fx:id="auctionListView" VBox.vgrow="ALWAYS" style="-fx-font-size: 14px;"/>
+
+    <HBox spacing="10" alignment="CENTER">
+        <TextField fx:id="itemNameField" promptText="Tên sản phẩm muốn bán..." prefWidth="200" style="-fx-font-size: 13px;"/>
+        <TextField fx:id="durationField" promptText="Thời gian (phút)..." prefWidth="120" style="-fx-font-size: 13px;"/>
+    </HBox>
 
     <HBox spacing="20" alignment="CENTER">
         <Button text="Tạo Phiên Mới" onAction="#handleCreateAuction" style="-fx-font-size: 14px; -fx-cursor: hand;"/>

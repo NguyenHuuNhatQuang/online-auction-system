@@ -31,9 +31,13 @@ public class AuctionRoomController {
     this.networkClient = SceneManager.getInstance().getNetworkClient();
 
     roomTitleLabel.setText("Phiên Đấu Giá: " + auctionId);
-    logArea.appendText("Bạn đã vào phòng. Có thể bắt đầu đặt giá!\n");
+    logArea.appendText("Bạn đã vào phòng. Đang đồng bộ dữ liệu...\n");
 
     networkClient.setOnMessageReceived(this::handleServerMessage);
+
+    String payload = "{\"auctionId\":\"" + auctionId + "\"}";
+    String request = "{\"action\":\"GET_AUCTION_STATE\", \"payload\":\"" + payload.replace("\"", "\\\"") + "\"}";
+    networkClient.sendMessage(request);
   }
 
   private void handleServerMessage(String jsonMessage) {
@@ -43,6 +47,47 @@ public class AuctionRoomController {
       Platform.runLater(() -> {
         try {
           switch (message.getAction()) {
+            case "AUCTION_FINISHED":
+              JsonNode endNode = objectMapper.readTree(message.getPayload());
+              String endedAuctionId = endNode.get("auctionId").asText();
+
+              // Nếu thông báo này dành cho phòng đang mở
+              if (this.auctionId.equals(endedAuctionId)) {
+                String winner = endNode.get("winner").asText();
+                double finalPrice = endNode.get("finalPrice").asDouble();
+
+                logArea.appendText("\n==============================\n");
+                logArea.appendText("BÚA ĐÃ GÕ! PHIÊN ĐẤU GIÁ KẾT THÚC.\n");
+                if ("Không có ai".equals(winner)) {
+                  logArea.appendText("Sản phẩm không có ai mua.\n");
+                } else {
+                  logArea.appendText("Người chiến thắng: " + winner + " với giá $" + finalPrice + "\n");
+                }
+                logArea.appendText("==============================\n");
+
+                // Khóa UI không cho đặt giá nữa
+                bidAmountField.setDisable(true);
+              }
+              break;
+
+            case "AUCTION_STATE":
+              JsonNode stateNode = objectMapper.readTree(message.getPayload());
+              double currentPrice = stateNode.get("currentPrice").asDouble();
+              String currentBidder = stateNode.get("highestBidder").asText();
+              String status = stateNode.get("status").asText();
+
+              currentPriceLabel.setText(String.format("Giá cao nhất: $%.2f", currentPrice));
+
+              if ("CLOSED".equals(status)) {
+                logArea.appendText(">> Phiên đấu giá này đã KẾT THÚC.\n");
+                bidAmountField.setDisable(true); // Khóa ô nhập giá
+              } else if (!"Chưa có".equals(currentBidder)) {
+                logArea.appendText(">> Người đang giữ giá cao nhất là " + currentBidder + "\n");
+              } else {
+                logArea.appendText(">> Chưa có ai đặt giá. Hãy là người đầu tiên!\n");
+              }
+              break;
+
             case "NEW_BID_BROADCAST":
               JsonNode payloadNode = objectMapper.readTree(message.getPayload());
               String targetAuction = payloadNode.get("auctionId").asText();
