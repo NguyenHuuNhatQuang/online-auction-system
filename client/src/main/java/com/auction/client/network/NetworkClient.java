@@ -48,19 +48,28 @@ public class NetworkClient {
         // Vòng lặp chặn (Blocking), nằm im đợi cho đến khi Server gửi tin nhắn
         while ((line = in.readLine()) != null) {
           System.out.println("[NetworkClient] Nhận từ Server: " + line);
-          // Nếu có tin nhắn, đẩy nó qua phễu Callback về cho màn hình UI
           if (onMessageReceived != null) {
             onMessageReceived.accept(line);
           }
+          // Nếu tin nhắn là ngắt từ Server, tự động phá vòng lặp
+          if (line.contains("SERVER_DISCONNECTED")) {
+            break;
+          }
         }
       } catch (IOException e) {
-        System.out.println("[NetworkClient] Đường truyền mạng đã bị ngắt.");
+        // Chạy vào đây nếu đường truyền bị bẻ gãy đột ngột
+        System.out.println("[NetworkClient] Đường truyền mạng bị ngắt do lỗi: " + e.getMessage());
+      } finally {
+        // KHỐI FINALLY: Luôn luôn được gọi dù thoát vòng lặp bình thường hay bị văng lỗi
+        System.out.println("[NetworkClient] Kết nối tới Server đã khép lại.");
+        if (onMessageReceived != null) {
+          onMessageReceived.accept("{\"action\":\"SERVER_DISCONNECTED\"}");
+        }
+
+        this.disconnect();
       }
     });
 
-    // CỰC KỲ QUAN TRỌNG: Đặt làm Daemon Thread.
-    // Khi người dùng bấm dấu X tắt màn hình JavaFX, luồng này sẽ tự động chết theo,
-    // nếu không có dòng này, app JavaFX tắt rồi nhưng code vẫn chạy ngầm tốn RAM.
     listeningThread.setDaemon(true);
     listeningThread.start();
   }
@@ -86,5 +95,14 @@ public class NetworkClient {
     } catch (IOException e) {
       System.err.println("[NetworkClient] Lỗi khi đóng kết nối: " + e.getMessage());
     }
+  }
+
+  /**
+   * Cập nhật lại hàm xử lý tin nhắn.
+   * Giúp mỗi màn hình (Login, Dashboard, AuctionRoom) có thể tự giành quyền
+   * xử lý tin nhắn từ Server theo cách riêng của nó.
+   */
+  public void setOnMessageReceived(Consumer<String> onMessageReceived) {
+    this.onMessageReceived = onMessageReceived;
   }
 }
