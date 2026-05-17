@@ -130,10 +130,14 @@ class MessageRouterTest {
     // 1. Chuẩn bị số lượng phiên đấu giá trước khi test (Đã có 1 cái từ setUp)
     int initialAuctions = auctionManager.getAllAuctions().size();
 
-    // 2. Chuẩn bị chuỗi JSON mô phỏng lệnh tạo phiên đấu giá từ Seller
+    // THÊM MỚI: Giả lập việc Seller đã thêm sản phẩm vào kho (ItemManager) trước đó
+    com.auction.common.models.Item testItem = new com.auction.common.models.Electronics("item_mock_999", "Laptop Gaming", "Mới 100%", 24);
+    com.auction.server.services.ItemManager.getInstance().addItem(testItem, "seller_99");
+
+    // 2. Chuẩn bị chuỗi JSON mô phỏng lệnh tạo phiên (CẬP NHẬT: Dùng itemId thay vì itemType/itemName)
     String createAuctionJson = "{"
         + "\"action\": \"CREATE_AUCTION\","
-        + "\"payload\": \"{\\\"itemType\\\":\\\"ELECTRONICS\\\", \\\"itemName\\\":\\\"Laptop Gaming\\\", \\\"itemDesc\\\":\\\"Mới 100%\\\", \\\"startPrice\\\": 1500.0, \\\"durationMinutes\\\": 60, \\\"sellerId\\\":\\\"seller_99\\\", \\\"sellerName\\\":\\\"John Doe\\\"}\""
+        + "\"payload\": \"{\\\"itemId\\\":\\\"item_mock_999\\\", \\\"startPrice\\\": 1500.0, \\\"durationMinutes\\\": 60, \\\"sellerId\\\":\\\"seller_99\\\", \\\"sellerName\\\":\\\"John Doe\\\"}\""
         + "}";
 
     // 3. Thực thi việc định tuyến

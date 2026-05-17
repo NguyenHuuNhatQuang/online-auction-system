@@ -19,6 +19,7 @@ public class SceneManager {
   private NetworkClient networkClient;
   private String currentUser; // Lưu tên người dùng sau khi nhập
   private String currentAuctionId;
+  private String userRole;
 
   private SceneManager() {}
 
@@ -57,4 +58,6 @@ public class SceneManager {
   public void setCurrentUser(String currentUser) { this.currentUser = currentUser; }
   public String getCurrentAuctionId() { return currentAuctionId; }
   public void setCurrentAuctionId(String currentAuctionId) { this.currentAuctionId = currentAuctionId; }
+  public String getUserRole() { return userRole; }
+  public void setUserRole(String userRole) { this.userRole = userRole; }
 }
