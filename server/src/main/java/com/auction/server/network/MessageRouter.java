@@ -54,21 +54,33 @@ public class MessageRouter {
 
       // Bước 2: Dựa vào hành động (action) để rẽ nhánh xử lý
       switch (message.getAction()) {
+        case "LOGIN":
+          handleLogin(message.getPayload(), client);
+          break;
         case "PLACE_BID":
           handlePlaceBid(message.getPayload(), client);
           break;
         case "CREATE_AUCTION":
           handleCreateAuction(message.getPayload(), client);
           break;
-        case "CLIENT_DISCONNECT": // THÊM CASE NÀY
+        case "CLIENT_DISCONNECT":
           System.out.println("[Router] Nhận yêu cầu ngắt kết nối từ Client.");
-          client.disconnect(); // Chủ động ngắt Client này ra khỏi Server
+          client.disconnect();
           break;
         case "GET_ACTIVE_AUCTIONS":
           handleGetActiveAuctions(client);
           break;
         case "GET_AUCTION_STATE":
           handleGetAuctionState(message.getPayload(), client);
+          break;
+        case "ADD_ITEM": // THÊM MỚI
+          handleAddItem(message.getPayload(), client);
+          break;
+        case "GET_SELLER_ITEMS": // THÊM MỚI
+          handleGetSellerItems(message.getPayload(), client);
+          break;
+        case "DELETE_ITEM": // THÊM MỚI
+          handleDeleteItem(message.getPayload(), client);
           break;
         default:
           sendError(client, "Hành động không được hệ thống hỗ trợ: " + message.getAction());
@@ -124,22 +136,19 @@ public class MessageRouter {
    */
   private void handleCreateAuction(String payloadJson, ClientHandler client) {
     try {
-      // 1. Phân tích dữ liệu sản phẩm từ JSON
       JsonNode payloadNode = objectMapper.readTree(payloadJson);
-      String itemType = payloadNode.get("itemType").asText(); // "ELECTRONICS" hoặc "ART"
-      String itemName = payloadNode.get("itemName").asText();
-      String itemDesc = payloadNode.get("itemDesc").asText();
+      String itemId = payloadNode.get("itemId").asText();
       double startPrice = payloadNode.get("startPrice").asDouble();
-      int durationMinutes = payloadNode.get("durationMinutes").asInt(); // Thời lượng phiên (phút)
-
-      // Thông tin người bán (Thực tế sẽ lấy từ Token hoặc Session đăng nhập)
+      int durationMinutes = payloadNode.get("durationMinutes").asInt();
       String sellerId = payloadNode.get("sellerId").asText();
       String sellerName = payloadNode.get("sellerName").asText();
 
-      // 2. Sử dụng Factory để tạo Sản phẩm
-      Item item = ItemFactory.createItem(itemType, itemName, itemDesc, new HashMap<>());
+      // Kiểm tra sản phẩm từ ItemManager trung tâm
+      Item item = com.auction.server.services.ItemManager.getInstance().getItem(itemId);
+      if (item == null) {
+        throw new IllegalArgumentException("Sản phẩm không tồn tại trong kho lưu trữ.");
+      }
 
-      // 3. Khởi tạo Phiên đấu giá
       Seller seller = new Seller(sellerId, sellerName, "");
       LocalDateTime startTime = LocalDateTime.now();
       LocalDateTime endTime = startTime.plusMinutes(durationMinutes);
@@ -148,22 +157,19 @@ public class MessageRouter {
       Auction newAuction = new Auction(auctionId, item, seller, startPrice, startTime, endTime);
       newAuction.setStatus("RUNNING");
 
-      // 4. Lưu vào hệ thống quản lý trung tâm
       auctionManager.addAuction(newAuction);
 
-      // 5. Gửi thông báo thành công cho Seller
       String responsePayload = String.format("{\"auctionId\":\"%s\", \"status\":\"RUNNING\"}", auctionId);
       SocketMessage successMsg = new SocketMessage("AUCTION_CREATED", responsePayload);
       client.sendMessage(objectMapper.writeValueAsString(successMsg));
 
-      // (Tùy chọn) Phát sóng cho mọi người biết có hàng mới lên sàn
       SocketMessage broadcastMsg = new SocketMessage("NEW_AUCTION_BROADCAST", responsePayload);
       server.broadcastMessage(objectMapper.writeValueAsString(broadcastMsg));
 
-      System.out.println("[MessageRouter] Đã tạo phiên đấu giá mới: " + auctionId);
+      System.out.println("[MessageRouter] Đã đưa sản phẩm " + item.getName() + " lên sàn: " + auctionId);
 
     } catch (Exception e) {
-      sendError(client, "Lỗi khi tạo phiên đấu giá: " + e.getMessage());
+      sendError(client, "Lỗi khi khởi tạo phiên đấu giá: " + e.getMessage());
     }
   }
 
@@ -220,6 +226,104 @@ public class MessageRouter {
 
     // Đóng gói và gửi trả về Client
     String response = String.format("{\"action\":\"ACTIVE_AUCTIONS_LIST\", \"payload\":%s}", escapeJson(payload.toString()));
+    client.sendMessage(response);
+  }
+
+  private void handleLogin(String payloadJson, ClientHandler client) {
+    try {
+      JsonNode payloadNode = objectMapper.readTree(payloadJson);
+      String username = payloadNode.get("username").asText();
+      String password = payloadNode.get("password").asText();
+
+      // Gọi UserManager để kiểm tra
+      com.auction.server.services.UserManager userManager = com.auction.server.services.UserManager.getInstance();
+      com.auction.common.models.User user = userManager.authenticate(username, password);
+
+      if (user != null) {
+        // Trả về thành công kèm theo Role (Vai trò) của người dùng
+        String payload = String.format(
+            "{\"username\":\"%s\", \"role\":\"%s\", \"userId\":\"%s\"}",
+            user.getUsername(), user.getRole(), user.getId()
+        );
+        String response = String.format("{\"action\":\"LOGIN_SUCCESS\", \"payload\":%s}", escapeJson(payload));
+        client.sendMessage(response);
+      } else {
+        sendError(client, "Sai tên đăng nhập hoặc mật khẩu!");
+      }
+    } catch (Exception e) {
+      sendError(client, "Lỗi định dạng đăng nhập.");
+    }
+  }
+
+  private void handleAddItem(String payloadJson, ClientHandler client) {
+    try {
+      JsonNode payloadNode = objectMapper.readTree(payloadJson);
+      String itemType = payloadNode.get("itemType").asText();
+      String itemName = payloadNode.get("itemName").asText();
+      String itemDesc = payloadNode.get("itemDesc").asText();
+      String sellerId = payloadNode.get("sellerId").asText();
+
+      HashMap<String, Object> attributes = new HashMap<>();
+      if ("ELECTRONICS".equalsIgnoreCase(itemType) && payloadNode.has("warrantyMonths")) {
+        attributes.put("warrantyMonths", payloadNode.get("warrantyMonths").asInt());
+      } else if ("ART".equalsIgnoreCase(itemType) && payloadNode.has("artist")) {
+        attributes.put("artist", payloadNode.get("artist").asText());
+      }
+
+      Item item = ItemFactory.createItem(itemType, itemName, itemDesc, attributes);
+      com.auction.server.services.ItemManager.getInstance().addItem(item, sellerId);
+
+      sendSellerItems(sellerId, client);
+    } catch (Exception e) {
+      sendError(client, "Không thể thêm sản phẩm: " + e.getMessage());
+    }
+  }
+
+  private void handleGetSellerItems(String payloadJson, ClientHandler client) {
+    try {
+      JsonNode payloadNode = objectMapper.readTree(payloadJson);
+      String sellerId = payloadNode.get("sellerId").asText();
+      sendSellerItems(sellerId, client);
+    } catch (Exception e) {
+      sendError(client, "Lỗi đồng bộ dữ liệu kho.");
+    }
+  }
+
+  private void handleDeleteItem(String payloadJson, ClientHandler client) {
+    try {
+      JsonNode payloadNode = objectMapper.readTree(payloadJson);
+      String itemId = payloadNode.get("itemId").asText();
+      String sellerId = payloadNode.get("sellerId").asText();
+
+      com.auction.server.services.ItemManager.getInstance().deleteItem(itemId);
+      sendSellerItems(sellerId, client);
+    } catch (Exception e) {
+      sendError(client, "Lỗi thực thi lệnh xóa.");
+    }
+  }
+
+  private void sendSellerItems(String sellerId, ClientHandler client) throws JsonProcessingException {
+    Collection<Item> sellerItems = com.auction.server.services.ItemManager.getInstance().getItemsBySeller(sellerId);
+    StringBuilder payload = new StringBuilder("[");
+    int index = 0;
+    for (Item item : sellerItems) {
+      String extra = "";
+      if (item instanceof com.auction.common.models.Electronics) {
+        extra = ", \"warrantyMonths\":" + ((com.auction.common.models.Electronics) item).getWarrantyMonths();
+      } else if (item instanceof com.auction.common.models.Art) {
+        extra = ", \"artist\":\"" + ((com.auction.common.models.Art) item).getArtist() + "\"";
+      }
+      payload.append(String.format(
+          "{\"id\":\"%s\", \"name\":\"%s\", \"desc\":\"%s\", \"type\":\"%s\"%s}",
+          item.getId(), item.getName(), item.getDescription(), item.getItemType(), extra
+      ));
+      if (++index < sellerItems.size()) {
+        payload.append(",");
+      }
+    }
+    payload.append("]");
+
+    String response = String.format("{\"action\":\"SELLER_ITEMS_LIST\", \"payload\":%s}", escapeJson(payload.toString()));
     client.sendMessage(response);
   }
 

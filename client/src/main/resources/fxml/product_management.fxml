@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ListView?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.geometry.Insets?>
+
+<VBox spacing="12.0" alignment="TOP_CENTER" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.auction.client.controllers.ProductManagementController">
+    <padding>
+        <Insets top="15" right="15" bottom="15" left="15"/>
+    </padding>
+
+    <Label text="QUẢN LÝ KHO SẢN PHẨM (SELLER)" style="-fx-font-size: 18px; -fx-font-weight: bold;"/>
+
+    <ListView fx:id="itemListView" VBox.vgrow="ALWAYS" style="-fx-font-size: 13px;"/>
+
+    <Label text="Thêm Sản Phẩm Mới" style="-fx-font-weight: bold; -fx-text-fill: #1565C0;"/>
+    <HBox spacing="8" alignment="CENTER">
+        <TextField fx:id="nameField" promptText="Tên sản phẩm..." prefWidth="120"/>
+        <TextField fx:id="descField" promptText="Mô tả..." prefWidth="120"/>
+        <ComboBox fx:id="typeComboBox" promptText="Loại" prefWidth="110"/>
+        <TextField fx:id="attrField" promptText="Bảo hành/Tác giả..." prefWidth="120"/>
+        <Button text="Thêm Vào Kho" onAction="#handleAddItem" style="-fx-base: #2196F3; -fx-cursor: hand;"/>
+    </HBox>
+
+    <Label text="Thao Tác Trên Sản Phẩm Đang Chọn" style="-fx-font-weight: bold; -fx-text-fill: #2E7D32;"/>
+    <HBox spacing="10" alignment="CENTER">
+        <TextField fx:id="startPriceField" promptText="Giá khởi điểm ($)..." prefWidth="120"/>
+        <TextField fx:id="durationField" promptText="Thời gian (phút)..." prefWidth="120"/>
+        <Button text="Đưa Lên Sàn Đấu Giá" onAction="#handleLaunchAuction" style="-fx-base: #4CAF50; -fx-cursor: hand;"/>
+        <Button text="Xóa Khỏi Kho" onAction="#handleDeleteItem" style="-fx-base: #f44336; -fx-cursor: hand;"/>
+    </HBox>
+
+    <Button text="Quay lại Sảnh Chờ" onAction="#handleBack" style="-fx-margin-top: 5px; -fx-cursor: hand;"/>
+</VBox>
