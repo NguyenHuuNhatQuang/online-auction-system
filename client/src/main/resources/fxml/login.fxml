@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.control.Button?>
+
+<VBox alignment="CENTER" spacing="15.0" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.auction.client.controllers.LoginController">
+
+    <Label text="HỆ THỐNG ĐẤU GIÁ TRỰC TUYẾN" style="-fx-font-size: 20px; -fx-font-weight: bold;"/>
+
+    <TextField fx:id="usernameField" promptText="Nhập tên của bạn..." maxWidth="200" style="-fx-font-size: 14px;"/>
+
+    <Button text="Vào Sàn Đấu Giá" onAction="#handleLogin" style="-fx-font-size: 14px; -fx-cursor: hand;"/>
+
+</VBox>

@@ -15,6 +15,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.UUID;
+import java.util.Collection;
+import java.util.List;
 
 /**
  * Chịu trách nhiệm phân tích chuỗi JSON từ Client, điều hướng lệnh đến các Service tương ứng,
@@ -58,7 +60,13 @@ public class MessageRouter {
         case "CREATE_AUCTION":
           handleCreateAuction(message.getPayload(), client);
           break;
-        // Các case khác như "LOGIN", "GET_AUCTIONS"... sẽ được thêm vào sau
+        case "CLIENT_DISCONNECT": // THÊM CASE NÀY
+          System.out.println("[Router] Nhận yêu cầu ngắt kết nối từ Client.");
+          client.disconnect(); // Chủ động ngắt Client này ra khỏi Server
+          break;
+        case "GET_ACTIVE_AUCTIONS": // THÊM CASE NÀY
+          handleGetActiveAuctions(client);
+          break;
         default:
           sendError(client, "Hành động không được hệ thống hỗ trợ: " + message.getAction());
           break;
@@ -166,5 +174,32 @@ public class MessageRouter {
     } catch (JsonProcessingException e) {
       e.printStackTrace(); // Log lỗi server nếu việc tạo JSON lỗi bị hỏng
     }
+  }
+
+  private void handleGetActiveAuctions(ClientHandler client) {
+    StringBuilder payload = new StringBuilder("[");
+
+    // Gọi trực tiếp Singleton từ đúng Package, gọi hàm getAllAuctions
+    Collection<Auction> allAuctions = AuctionManager.getInstance().getAllAuctions();
+
+    // Lọc các phiên đang chạy (Dùng var để tự động nhận diện kiểu dữ liệu phiên đấu giá)
+    List<Auction> activeAuctions = allAuctions.stream()
+        .filter(a -> "RUNNING".equals(a.getStatus()))
+        .toList();
+
+    for (int i = 0; i < activeAuctions.size(); i++) {
+      Auction session = activeAuctions.get(i);
+      payload.append("{\"auctionId\":\"").append(session.getId()).append("\"}");
+      if (i < activeAuctions.size() - 1) payload.append(",");
+    }
+    payload.append("]");
+
+    // Đóng gói và gửi trả về Client
+    String response = String.format("{\"action\":\"ACTIVE_AUCTIONS_LIST\", \"payload\":%s}", escapeJson(payload.toString()));
+    client.sendMessage(response);
+  }
+
+  private String escapeJson(String raw) {
+    return "\"" + raw.replace("\"", "\\\"") + "\"";
   }
 }
