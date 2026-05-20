@@ -11,6 +11,12 @@ import javafx.scene.control.Alert;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
+import javafx.scene.control.Button;
+import javafx.animation.KeyFrame;
+import javafx.animation.Timeline;
+import javafx.util.Duration;
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 
 public class AuctionRoomController {
 
@@ -18,11 +24,18 @@ public class AuctionRoomController {
   @FXML private Label currentPriceLabel;
   @FXML private TextField bidAmountField;
   @FXML private TextArea logArea;
+  @FXML private Label itemNameLabel;
+  @FXML private Label itemDescLabel;
+  @FXML private Label timerLabel;
+  @FXML private Label highestBidderLabel;
+  @FXML private Button payButton;
 
   private NetworkClient networkClient;
   private String currentUser;
   private String auctionId;
   private final ObjectMapper objectMapper = new ObjectMapper();
+  private Timeline countdownTimeline;
+  private LocalDateTime endTime;
 
   @FXML
   public void initialize() {
@@ -62,6 +75,11 @@ public class AuctionRoomController {
                   logArea.appendText("Sản phẩm không có ai mua.\n");
                 } else {
                   logArea.appendText("Người chiến thắng: " + winner + " với giá $" + finalPrice + "\n");
+
+                  if (currentUser.equals(winner)) {
+                    payButton.setVisible(true);
+                    payButton.setManaged(true);
+                  }
                 }
                 logArea.appendText("==============================\n");
 
@@ -70,38 +88,46 @@ public class AuctionRoomController {
               }
               break;
 
-            case "AUCTION_STATE":
-              JsonNode stateNode = objectMapper.readTree(message.getPayload());
-              double currentPrice = stateNode.get("currentPrice").asDouble();
-              String currentBidder = stateNode.get("highestBidder").asText();
-              String status = stateNode.get("status").asText();
-
-              currentPriceLabel.setText(String.format("Giá cao nhất: $%.2f", currentPrice));
-
-              if ("CLOSED".equals(status)) {
-                logArea.appendText(">> Phiên đấu giá này đã KẾT THÚC.\n");
-                bidAmountField.setDisable(true); // Khóa ô nhập giá
-              } else if (!"Chưa có".equals(currentBidder)) {
-                logArea.appendText(">> Người đang giữ giá cao nhất là " + currentBidder + "\n");
-              } else {
-                logArea.appendText(">> Chưa có ai đặt giá. Hãy là người đầu tiên!\n");
+            case "AUCTION_PAID": { // Lắng nghe phản hồi thanh toán thành công
+              JsonNode paidNode = objectMapper.readTree(message.getPayload());
+              if (this.auctionId.equals(paidNode.get("auctionId").asText())) {
+                showAlert("Thành công", "Bạn đã thanh toán thành công cho phiên đấu giá này!");
+                handleLeaveRoom(); // Trục xuất ra Sảnh chờ sau khi thanh toán xong
               }
               break;
+            }
 
-            case "NEW_BID_BROADCAST":
+            case "AUCTION_STATE": {
+              JsonNode stateNode = objectMapper.readTree(message.getPayload());
+              itemNameLabel.setText("Sản phẩm: " + stateNode.get("itemName").asText());
+              itemDescLabel.setText("Mô tả: " + stateNode.get("itemDesc").asText());
+              currentPriceLabel.setText(String.format("Giá cao nhất: $%.2f", stateNode.get("currentPrice").asDouble()));
+              highestBidderLabel.setText("Người giữ giá: " + stateNode.get("highestBidder").asText());
+
+              String status = stateNode.get("status").asText();
+              if ("CLOSED".equals(status) || "FINISHED".equals(status)) {
+                timerLabel.setText("ĐÃ KẾT THÚC");
+                bidAmountField.setDisable(true);
+              } else {
+                // Khởi động đồng hồ đếm ngược
+                this.endTime = LocalDateTime.parse(stateNode.get("endTime").asText());
+                startCountdownTimer();
+              }
+              break;
+            }
+
+            case "NEW_BID_BROADCAST": {
               JsonNode payloadNode = objectMapper.readTree(message.getPayload());
-              String targetAuction = payloadNode.get("auctionId").asText();
-
-              // Chỉ cập nhật UI nếu gói tin thuộc về đúng phòng đấu giá này
-              if (this.auctionId.equals(targetAuction)) {
+              if (this.auctionId.equals(payloadNode.get("auctionId").asText())) {
                 double newPrice = payloadNode.get("newPrice").asDouble();
-                // Chú ý: Lấy đúng key "highestBidder" từ Server gửi về
                 String bidder = payloadNode.get("highestBidder").asText();
 
                 currentPriceLabel.setText(String.format("Giá cao nhất: $%.2f", newPrice));
+                highestBidderLabel.setText("Người giữ giá: " + bidder); // Cập nhật người giữ giá
                 logArea.appendText(">> " + bidder + " vừa nâng giá lên $" + newPrice + "\n");
               }
               break;
+            }
 
             case "BID_SUCCESS":
               logArea.appendText("==> Chúc mừng! Bạn đang là người trả giá cao nhất.\n");
@@ -134,6 +160,10 @@ public class AuctionRoomController {
 
     try {
       double amount = Double.parseDouble(amountText);
+      if (amount <= 0) {
+        showAlert("Lỗi", "Giá đặt phải lớn hơn 0!");
+        return;
+      }
 
       // Xây dựng JSON payload khớp 100% với MessageRouter của Server
       // Do Client thiết kế tối giản không có ID riêng, ta dùng tên (currentUser) cho cả userId và username
@@ -151,8 +181,38 @@ public class AuctionRoomController {
   }
 
   @FXML
+  private void handlePay() {
+    // Gửi lệnh mạng lên Server
+    String request = String.format("{\"action\":\"PAY_AUCTION\", \"payload\":\"{\\\"auctionId\\\":\\\"%s\\\"}\"}", auctionId);
+    networkClient.sendMessage(request);
+
+    // Tạm thời vô hiệu hóa nút tránh bấm 2 lần
+    payButton.setDisable(true);
+    payButton.setText("Đang xử lý...");
+  }
+
+  private void startCountdownTimer() {
+    if (countdownTimeline != null) {
+      countdownTimeline.stop();
+    }
+    countdownTimeline = new Timeline(new KeyFrame(Duration.seconds(1), event -> {
+      long secondsRemaining = LocalDateTime.now().until(endTime, ChronoUnit.SECONDS);
+      if (secondsRemaining <= 0) {
+        timerLabel.setText("ĐÃ KẾT THÚC");
+        countdownTimeline.stop();
+      } else {
+        long minutes = secondsRemaining / 60;
+        long seconds = secondsRemaining % 60;
+        timerLabel.setText(String.format("Thời gian còn lại: %02d:%02d", minutes, seconds));
+      }
+    }));
+    countdownTimeline.setCycleCount(Timeline.INDEFINITE);
+    countdownTimeline.play();
+  }
+
+  @FXML
   private void handleLeaveRoom() {
-    // Trả lại quyền nhận tin nhắn cho Dashboard
+    if (countdownTimeline != null) countdownTimeline.stop();
     SceneManager.getInstance().switchScene("/fxml/dashboard.fxml", "Sảnh Chờ - " + currentUser);
   }
 

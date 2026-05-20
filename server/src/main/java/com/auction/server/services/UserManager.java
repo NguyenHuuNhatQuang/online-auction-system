@@ -47,4 +47,13 @@ public class UserManager {
     }
     return null;
   }
+
+  public User register(String username, String password, String role) {
+    if (users.containsKey(username)) return null; // Trùng tên
+    User newUser = "SELLER".equalsIgnoreCase(role)
+        ? new Seller("u" + (users.size() + 1), username, password)
+        : new Bidder("u" + (users.size() + 1), username, password);
+    users.put(username, newUser);
+    return newUser;
+  }
 }

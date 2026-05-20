@@ -57,8 +57,14 @@ public class MessageRouter {
         case "LOGIN":
           handleLogin(message.getPayload(), client);
           break;
+        case "REGISTER":
+          handleRegister(message.getPayload(), client);
+          break;
         case "PLACE_BID":
           handlePlaceBid(message.getPayload(), client);
+          break;
+        case "PAY_AUCTION":
+          handlePayAuction(message.getPayload(), client);
           break;
         case "CREATE_AUCTION":
           handleCreateAuction(message.getPayload(), client);
@@ -159,15 +165,19 @@ public class MessageRouter {
 
       auctionManager.addAuction(newAuction);
 
+      // 5. Gửi thông báo thành công cho Seller (Chỉ cần ID)
       String responsePayload = String.format("{\"auctionId\":\"%s\", \"status\":\"RUNNING\"}", auctionId);
       SocketMessage successMsg = new SocketMessage("AUCTION_CREATED", responsePayload);
       client.sendMessage(objectMapper.writeValueAsString(successMsg));
 
-      SocketMessage broadcastMsg = new SocketMessage("NEW_AUCTION_BROADCAST", responsePayload);
+      String broadcastPayload = String.format(
+          "{\"auctionId\":\"%s\", \"itemName\":\"%s\", \"itemDesc\":\"%s\", \"currentPrice\":%s, \"highestBidder\":\"Chưa có\", \"endTime\":\"%s\", \"status\":\"RUNNING\"}",
+          auctionId, item.getName(), item.getDescription(), startPrice, endTime.toString()
+      );
+      SocketMessage broadcastMsg = new SocketMessage("NEW_AUCTION_BROADCAST", broadcastPayload);
       server.broadcastMessage(objectMapper.writeValueAsString(broadcastMsg));
 
-      System.out.println("[MessageRouter] Đã đưa sản phẩm " + item.getName() + " lên sàn: " + auctionId);
-
+      System.out.println("[MessageRouter] Đã tạo phiên đấu giá mới: " + auctionId);
     } catch (Exception e) {
       sendError(client, "Lỗi khi khởi tạo phiên đấu giá: " + e.getMessage());
     }
@@ -194,8 +204,9 @@ public class MessageRouter {
         }
 
         String payload = String.format(
-            "{\"auctionId\":\"%s\", \"currentPrice\":%s, \"highestBidder\":\"%s\", \"status\":\"%s\"}",
-            auction.getId(), auction.getCurrentPrice(), bidderName, auction.getStatus()
+            "{\"auctionId\":\"%s\", \"itemName\":\"%s\", \"itemDesc\":\"%s\", \"currentPrice\":%s, \"highestBidder\":\"%s\", \"endTime\":\"%s\", \"status\":\"%s\"}",
+            auction.getId(), auction.getItem().getName(), auction.getItem().getDescription(),
+            auction.getCurrentPrice(), bidderName, auction.getEndTime().toString(), auction.getStatus()
         );
 
         String response = String.format("{\"action\":\"AUCTION_STATE\", \"payload\":%s}", escapeJson(payload));
@@ -208,23 +219,28 @@ public class MessageRouter {
 
   private void handleGetActiveAuctions(ClientHandler client) {
     StringBuilder payload = new StringBuilder("[");
-
-    // Gọi trực tiếp Singleton từ đúng Package, gọi hàm getAllAuctions
     Collection<Auction> allAuctions = AuctionManager.getInstance().getAllAuctions();
 
-    // Lọc các phiên đang chạy (Dùng var để tự động nhận diện kiểu dữ liệu phiên đấu giá)
+    // Lấy cả phiên RUNNING và FINISHED
     List<Auction> activeAuctions = allAuctions.stream()
-        .filter(a -> "RUNNING".equals(a.getStatus()))
+        .filter(a -> "RUNNING".equals(a.getStatus())
+            || "FINISHED".equals(a.getStatus())
+            || "PAID".equals(a.getStatus()))
         .toList();
 
     for (int i = 0; i < activeAuctions.size(); i++) {
       Auction session = activeAuctions.get(i);
-      payload.append("{\"auctionId\":\"").append(session.getId()).append("\"}");
+      String bidderName = (session.getHighestBidder() != null) ? session.getHighestBidder().getUsername() : "Chưa có";
+
+      payload.append(String.format(
+          "{\"auctionId\":\"%s\", \"itemName\":\"%s\", \"itemDesc\":\"%s\", \"currentPrice\":%s, \"highestBidder\":\"%s\", \"endTime\":\"%s\", \"status\":\"%s\"}",
+          session.getId(), session.getItem().getName(), session.getItem().getDescription(),
+          session.getCurrentPrice(), bidderName, session.getEndTime().toString(), session.getStatus()
+      ));
       if (i < activeAuctions.size() - 1) payload.append(",");
     }
     payload.append("]");
 
-    // Đóng gói và gửi trả về Client
     String response = String.format("{\"action\":\"ACTIVE_AUCTIONS_LIST\", \"payload\":%s}", escapeJson(payload.toString()));
     client.sendMessage(response);
   }
@@ -325,6 +341,42 @@ public class MessageRouter {
 
     String response = String.format("{\"action\":\"SELLER_ITEMS_LIST\", \"payload\":%s}", escapeJson(payload.toString()));
     client.sendMessage(response);
+  }
+
+  private void handleRegister(String payloadJson, ClientHandler client) {
+    try {
+      JsonNode payloadNode = objectMapper.readTree(payloadJson);
+      String username = payloadNode.get("username").asText();
+      String password = payloadNode.get("password").asText();
+      String role = payloadNode.get("role").asText();
+
+      com.auction.common.models.User user = com.auction.server.services.UserManager.getInstance().register(username, password, role);
+      if (user != null) {
+        client.sendMessage("{\"action\":\"REGISTER_SUCCESS\", \"payload\":\"\"}");
+      } else {
+        sendError(client, "Tên đăng nhập đã tồn tại!");
+      }
+    } catch (Exception e) {
+      sendError(client, "Lỗi định dạng đăng ký.");
+    }
+  }
+
+  private void handlePayAuction(String payloadJson, ClientHandler client) {
+    try {
+      String auctionId = objectMapper.readTree(payloadJson).get("auctionId").asText();
+      Auction auction = AuctionManager.getInstance().getAuction(auctionId);
+
+      if (auction != null && "FINISHED".equals(auction.getStatus())) {
+        auction.setStatus("PAID");
+
+        // Broadcast cho toàn server biết phiên này đã thanh toán xong
+        String payload = String.format("{\"auctionId\":\"%s\"}", auctionId);
+        SocketMessage msg = new SocketMessage("AUCTION_PAID", payload);
+        server.broadcastMessage(objectMapper.writeValueAsString(msg));
+      }
+    } catch (Exception e) {
+      sendError(client, "Lỗi thanh toán.");
+    }
   }
 
   private String escapeJson(String raw) {
