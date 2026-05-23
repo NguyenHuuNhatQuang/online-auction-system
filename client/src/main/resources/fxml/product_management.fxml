@@ -34,6 +34,7 @@
         <TextField fx:id="durationField" promptText="Thời gian (phút)..." prefWidth="120"/>
         <Button text="Đưa Lên Sàn Đấu Giá" onAction="#handleLaunchAuction" style="-fx-base: #4CAF50; -fx-cursor: hand;"/>
         <Button text="Xóa Khỏi Kho" onAction="#handleDeleteItem" style="-fx-base: #f44336; -fx-cursor: hand;"/>
+        <Button text="Cập Nhật Tên/Mô Tả" onAction="#handleEditItem" style="-fx-base: #FF9800; -fx-cursor: hand;"/>
     </HBox>
 
     <Button text="Quay lại Sảnh Chờ" onAction="#handleBack" style="-fx-margin-top: 5px; -fx-cursor: hand;"/>

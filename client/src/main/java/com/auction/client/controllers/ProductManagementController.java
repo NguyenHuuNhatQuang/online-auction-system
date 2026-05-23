@@ -100,7 +100,20 @@ public class ProductManagementController {
 
     String payload;
     if ("ELECTRONICS".equals(type)) {
-      int warranty = attr.isEmpty() ? 0 : Integer.parseInt(attr);
+      int warranty = 0;
+      if (!attr.isEmpty()) {
+        try {
+          warranty = Integer.parseInt(attr);
+          // THÊM KIỂM TRA SỐ ÂM:
+          if (warranty < 0) {
+            showAlert(Alert.AlertType.ERROR, "Lỗi nhập liệu", "Số tháng bảo hành không được là số âm!");
+            return;
+          }
+        } catch (NumberFormatException e) {
+          showAlert(Alert.AlertType.ERROR, "Lỗi nhập liệu", "Số tháng bảo hành phải là số nguyên hợp lệ!");
+          return;
+        }
+      }
       payload = String.format("{\\\"itemType\\\":\\\"ELECTRONICS\\\", \\\"itemName\\\":\\\"%s\\\", \\\"itemDesc\\\":\\\"%s\\\", \\\"sellerId\\\":\\\"%s\\\", \\\"warrantyMonths\\\":%d}", name, desc, currentUser, warranty);
     } else {
       String artist = attr.isEmpty() ? "Unknown" : attr;
@@ -134,6 +147,16 @@ public class ProductManagementController {
       double startPrice = Double.parseDouble(priceText);
       int duration = Integer.parseInt(durationText);
 
+      // THÊM KIỂM TRA SỐ ÂM & BẰNG 0:
+      if (startPrice < 0) {
+        showAlert(Alert.AlertType.ERROR, "Lỗi nhập liệu", "Giá khởi điểm không được là số âm!");
+        return;
+      }
+      if (duration <= 0) {
+        showAlert(Alert.AlertType.ERROR, "Lỗi nhập liệu", "Thời gian đấu giá phải lớn hơn 0 phút!");
+        return;
+      }
+
       String payload = String.format(
           "{\\\"itemId\\\":\\\"%s\\\", \\\"startPrice\\\":%s, \\\"durationMinutes\\\":%d, \\\"sellerId\\\":\\\"%s\\\", \\\"sellerName\\\":\\\"%s\\\"}",
           itemId, startPrice, duration, currentUser, currentUser
@@ -142,6 +165,25 @@ public class ProductManagementController {
     } catch (NumberFormatException e) {
       showAlert(Alert.AlertType.ERROR, "Sai định dạng", "Giá tiền và số phút phải là chữ số hợp lệ.");
     }
+  }
+
+  @FXML
+  private void handleEditItem() {
+    int selectedIndex = itemListView.getSelectionModel().getSelectedIndex();
+    if (selectedIndex < 0) {
+      showAlert(Alert.AlertType.WARNING, "Lỗi", "Chọn một sản phẩm để sửa!");
+      return;
+    }
+    String newName = nameField.getText().trim();
+    String newDesc = descField.getText().trim();
+    if (newName.isEmpty() || newDesc.isEmpty()) {
+      showAlert(Alert.AlertType.WARNING, "Thiếu dữ liệu", "Nhập Tên và Mô tả mới vào ô bên trên để cập nhật!");
+      return;
+    }
+    String itemId = itemIds.get(selectedIndex);
+    String payload = String.format("{\\\"itemId\\\":\\\"%s\\\", \\\"newName\\\":\\\"%s\\\", \\\"newDesc\\\":\\\"%s\\\", \\\"sellerId\\\":\\\"%s\\\"}", itemId, newName, newDesc, currentUser);
+    networkClient.sendMessage(String.format("{\"action\":\"UPDATE_ITEM\", \"payload\":\"%s\"}", payload));
+    nameField.clear(); descField.clear();
   }
 
   @FXML
