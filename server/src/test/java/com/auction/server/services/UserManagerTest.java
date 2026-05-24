@@ -1,8 +1,13 @@
 package com.auction.server.services;
 
 import com.auction.common.models.User;
+import com.auction.server.database.DatabaseConnection;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.BeforeEach;
+
+import java.nio.file.Files;
+import java.nio.file.Paths;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -10,6 +15,19 @@ import static org.junit.jupiter.api.Assertions.*;
  * Kiểm thử logic quản lý và xác thực người dùng.
  */
 class UserManagerTest {
+  @BeforeEach
+  void setUp() {
+    try {
+      // 1. Xóa file database cũ nếu tồn tại
+      Files.deleteIfExists(Paths.get("auction_system.db"));
+
+      // 2. Tạo lại file và cấu trúc bảng mới tinh
+      DatabaseConnection.initDatabase();
+
+    } catch (Exception e) {
+      System.err.println("Lỗi dọn dẹp database trước khi test: " + e.getMessage());
+    }
+  }
 
   @Test
   @DisplayName("Đăng nhập thành công với tài khoản hợp lệ (BIDDER)")

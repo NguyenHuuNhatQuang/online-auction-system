@@ -1,5 +1,6 @@
 package com.auction.server;
 
+import com.auction.server.database.DatabaseConnection;
 import com.auction.server.network.AuctionServer;
 
 /**
@@ -15,6 +16,9 @@ public class Main {
     System.out.println("      HỆ THỐNG ĐẤU GIÁ TRỰC TUYẾN - SERVER       ");
     System.out.println("==================================================");
 
+    // Khởi tạo Database ngay khi bật Server
+    DatabaseConnection.initDatabase();
+
     // 1. Khởi tạo phiên bản máy chủ
     AuctionServer server = new AuctionServer(DEFAULT_PORT);
 
@@ -23,6 +27,9 @@ public class Main {
     Runtime.getRuntime().addShutdownHook(new Thread(() -> {
       System.out.println("\n[System] Nhận tín hiệu tắt máy chủ (SIGINT). Đang tiến hành dọn dẹp...");
       server.stopServer();
+
+      // Đóng hàng đợi DB
+      com.auction.server.database.DatabaseWriteQueue.getInstance().shutdown();
     }));
 
     // 3. Kích hoạt máy chủ

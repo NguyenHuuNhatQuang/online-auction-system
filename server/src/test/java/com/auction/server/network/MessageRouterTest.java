@@ -15,6 +15,9 @@ import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDateTime;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import com.auction.server.database.DatabaseConnection;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -40,9 +43,12 @@ class MessageRouterTest {
   private AuctionManager auctionManager;
 
   @BeforeEach
-  void setUp() {
+  void setUp() throws Exception {
     // Khởi tạo router thực tế, nhưng nhét cái server giả vào
     messageRouter = new MessageRouter(mockServer);
+
+    Files.deleteIfExists(Paths.get("auction_system.db"));
+    DatabaseConnection.initDatabase();
 
     // Chuẩn bị một phiên đấu giá giả trên hệ thống để test chức năng PLACE_BID
     auctionManager = AuctionManager.getInstance();
