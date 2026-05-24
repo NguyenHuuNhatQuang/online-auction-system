@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <?import javafx.scene.layout.VBox?>
+<?import javafx.scene.layout.HBox?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.TextField?>
 <?import javafx.scene.control.PasswordField?>
@@ -15,6 +16,9 @@
 
     <PasswordField fx:id="passwordField" promptText="Mật khẩu (vd: 123)" maxWidth="200" style="-fx-font-size: 14px;"/>
 
-    <Button text="Đăng nhập" onAction="#handleLogin" style="-fx-font-size: 14px; -fx-cursor: hand;"/>
-
+    <HBox spacing="10" alignment="CENTER">
+        <Button text="Đăng nhập" onAction="#handleLogin" style="-fx-font-size: 14px; -fx-cursor: hand; -fx-base: #2196F3;"/>
+        <Button text="Đăng ký Bidder" onAction="#handleRegisterBidder" style="-fx-font-size: 14px; -fx-cursor: hand;"/>
+        <Button text="Đăng ký Seller" onAction="#handleRegisterSeller" style="-fx-font-size: 14px; -fx-cursor: hand; -fx-base: #FF9800;"/>
+    </HBox>
 </VBox>

@@ -45,4 +45,35 @@ class UserManagerTest {
     User user2 = userManager.authenticate("hacker", "123");
     assertNull(user2, "Phải trả về null khi tài khoản không tồn tại");
   }
+
+  @Test
+  @DisplayName("Đăng ký tài khoản mới thành công")
+  void testRegister_Success() {
+    UserManager userManager = UserManager.getInstance();
+
+    // Đăng ký một tài khoản mới tinh
+    User newUser = userManager.register("new_bidder_test", "123", "BIDDER");
+
+    assertNotNull(newUser, "Phải trả về đối tượng User sau khi đăng ký");
+    assertEquals("new_bidder_test", newUser.getUsername(), "Tên người dùng phải khớp");
+    assertEquals("BIDDER", newUser.getRole(), "Vai trò phải được gán đúng là BIDDER");
+
+    // Đăng nhập thử bằng tài khoản vừa tạo
+    User loggedInUser = userManager.authenticate("new_bidder_test", "123");
+    assertNotNull(loggedInUser, "Phải đăng nhập được ngay bằng tài khoản vừa đăng ký");
+  }
+
+  @Test
+  @DisplayName("Đăng ký thất bại khi tên đăng nhập đã tồn tại")
+  void testRegister_Fail_DuplicateUsername() {
+    UserManager userManager = UserManager.getInstance();
+
+    // Đăng ký lần 1
+    userManager.register("duplicate_user", "123", "SELLER");
+
+    // Đăng ký lần 2 với cùng tên
+    User failedUser = userManager.register("duplicate_user", "456", "BIDDER");
+
+    assertNull(failedUser, "Phải trả về null khi cố tình đăng ký trùng tên");
+  }
 }

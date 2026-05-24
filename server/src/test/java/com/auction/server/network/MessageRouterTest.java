@@ -198,4 +198,72 @@ class MessageRouterTest {
     assertTrue(responseToClient.contains("ACTIVE_AUCTIONS_LIST"), "Phải trả về đúng Action báo danh sách");
     assertTrue(responseToClient.contains("auction_test_1"), "Phải chứa ID phiên đấu giá đang mở");
   }
+
+  @Test
+  @DisplayName("Định tuyến đúng khi gửi JSON lệnh REGISTER")
+  void testRoute_Register() {
+    String registerJson = "{"
+        + "\"action\": \"REGISTER\","
+        + "\"payload\": \"{\\\"username\\\":\\\"router_test_user\\\", \\\"password\\\":\\\"123\\\", \\\"role\\\":\\\"SELLER\\\"}\""
+        + "}";
+
+    messageRouter.route(registerJson, mockClient);
+
+    ArgumentCaptor<String> messageCaptor = ArgumentCaptor.forClass(String.class);
+    verify(mockClient).sendMessage(messageCaptor.capture());
+
+    String responseToClient = messageCaptor.getValue();
+    assertTrue(responseToClient.contains("REGISTER_SUCCESS"), "Phải phản hồi tạo tài khoản thành công");
+  }
+
+  @Test
+  @DisplayName("Định tuyến đúng khi gửi JSON lệnh UPDATE_ITEM")
+  void testRoute_UpdateItem() {
+    // Chuẩn bị dữ liệu: Thêm trước một sản phẩm vào kho
+    Item testItem = new Electronics("item_to_update", "Old Name", "Old Desc", 12);
+    com.auction.server.services.ItemManager.getInstance().addItem(testItem, "seller_99");
+
+    String updateJson = "{"
+        + "\"action\": \"UPDATE_ITEM\","
+        + "\"payload\": \"{\\\"itemId\\\":\\\"item_to_update\\\", \\\"newName\\\":\\\"New Name\\\", \\\"newDesc\\\":\\\"New Desc\\\", \\\"sellerId\\\":\\\"seller_99\\\"}\""
+        + "}";
+
+    messageRouter.route(updateJson, mockClient);
+
+    // Kiểm tra xem Item trong kho đã thực sự đổi tên chưa
+    Item updatedItem = com.auction.server.services.ItemManager.getInstance().getItem("item_to_update");
+    assertEquals("New Name", updatedItem.getName(), "Tên sản phẩm phải được cập nhật");
+    assertEquals("New Desc", updatedItem.getDescription(), "Mô tả sản phẩm phải được cập nhật");
+
+    // Kiểm tra xem Client có nhận được danh sách kho hàng mới không
+    ArgumentCaptor<String> messageCaptor = ArgumentCaptor.forClass(String.class);
+    verify(mockClient).sendMessage(messageCaptor.capture());
+    assertTrue(messageCaptor.getValue().contains("SELLER_ITEMS_LIST"), "Phải trả về danh sách cập nhật");
+  }
+
+  @Test
+  @DisplayName("Định tuyến đúng khi gửi JSON lệnh PAY_AUCTION")
+  void testRoute_PayAuction() {
+    // Chuẩn bị dữ liệu: Lấy phiên đấu giá test từ hàm setUp() và ép nó về trạng thái FINISHED
+    Auction testAuction = auctionManager.getAuction("auction_test_1");
+    testAuction.setStatus("FINISHED");
+
+    String payJson = "{"
+        + "\"action\": \"PAY_AUCTION\","
+        + "\"payload\": \"{\\\"auctionId\\\":\\\"auction_test_1\\\"}\""
+        + "}";
+
+    messageRouter.route(payJson, mockClient);
+
+    // 1. Kiểm tra trạng thái trong bộ nhớ trung tâm đã đổi thành PAID chưa
+    assertEquals("PAID", testAuction.getStatus(), "Trạng thái phiên phải đổi thành PAID");
+
+    // 2. Kiểm tra Server có phát sóng (Broadcast) sự kiện thanh toán thành công không
+    ArgumentCaptor<String> broadcastCaptor = ArgumentCaptor.forClass(String.class);
+    verify(mockServer).broadcastMessage(broadcastCaptor.capture());
+
+    String broadcastMessage = broadcastCaptor.getValue();
+    assertTrue(broadcastMessage.contains("AUCTION_PAID"), "Phải phát sóng lệnh AUCTION_PAID");
+    assertTrue(broadcastMessage.contains("auction_test_1"), "Phải phát loa đúng mã phiên");
+  }
 }

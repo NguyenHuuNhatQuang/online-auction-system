@@ -40,6 +40,28 @@ public class LoginController {
     SceneManager.getInstance().getNetworkClient().sendMessage(request);
   }
 
+  @FXML
+  private void handleRegisterBidder() {
+    sendRegisterRequest("BIDDER");
+  }
+
+  @FXML
+  private void handleRegisterSeller() {
+    sendRegisterRequest("SELLER");
+  }
+
+  private void sendRegisterRequest(String role) {
+    String username = usernameField.getText().trim();
+    String password = passwordField.getText().trim();
+    if (username.isEmpty() || password.isEmpty()) {
+      showAlert("Lỗi", "Vui lòng nhập đầy đủ tên và mật khẩu để đăng ký!");
+      return;
+    }
+    String payload = String.format("{\"username\":\"%s\", \"password\":\"%s\", \"role\":\"%s\"}", username, password, role);
+    String request = String.format("{\"action\":\"REGISTER\", \"payload\":%s}", escapeJson(payload));
+    SceneManager.getInstance().getNetworkClient().sendMessage(request);
+  }
+
   private void handleServerResponse(String jsonMessage) {
     try {
       SocketMessage message = objectMapper.readValue(jsonMessage, SocketMessage.class);
@@ -58,6 +80,8 @@ public class LoginController {
 
             // Chuyển trang
             SceneManager.getInstance().switchScene("/fxml/dashboard.fxml", "Sảnh Chờ - " + username + " (" + role + ")");
+          } else if ("REGISTER_SUCCESS".equals(message.getAction())) {
+            showAlert("Thành công", "Đăng ký tài khoản thành công! Vui lòng bấm Đăng nhập.");
           } else if ("ERROR".equals(message.getAction())) {
             showAlert("Đăng nhập thất bại", message.getPayload());
           }
