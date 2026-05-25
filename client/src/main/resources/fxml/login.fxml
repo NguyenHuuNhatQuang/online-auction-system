@@ -2,23 +2,54 @@
 
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.TextField?>
 <?import javafx.scene.control.PasswordField?>
 <?import javafx.scene.control.Button?>
+<?import javafx.geometry.Insets?>
 
-<VBox alignment="CENTER" spacing="15.0" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
-      fx:controller="com.auction.client.controllers.LoginController">
+<HBox xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.auction.client.controllers.LoginController"
+      prefWidth="1000" prefHeight="640">
 
-    <Label text="HỆ THỐNG ĐẤU GIÁ TRỰC TUYẾN" style="-fx-font-size: 20px; -fx-font-weight: bold;"/>
+    <!-- LEFT: Hero panel -->
+    <VBox styleClass="hero-left" spacing="14" HBox.hgrow="ALWAYS" alignment="CENTER_LEFT">
+        <Label text="BidNow" styleClass="hero-title"/>
+        <Label text="Sàn đấu giá trực tuyến" styleClass="hero-lead"/>
+        <Label text="Đấu giá Electronics và Art realtime. Hệ thống tự đóng phiên đúng giờ, broadcast tới mọi người tham gia." styleClass="hero-sub" wrapText="true" maxWidth="380"/>
+        <Region prefHeight="14"/>
+        <Label text="— Cập nhật giá theo thời gian thực" styleClass="hero-feat"/>
+        <Label text="— Tự đóng phiên khi hết thời gian" styleClass="hero-feat"/>
+        <Label text="— Phân quyền Người mua / Người bán" styleClass="hero-feat"/>
+        <Label text="— Thanh toán an toàn sau khi chốt" styleClass="hero-feat"/>
+    </VBox>
 
-    <TextField fx:id="usernameField" promptText="Tên đăng nhập (vd: alice, bob)" maxWidth="200" style="-fx-font-size: 14px;"/>
+    <!-- RIGHT: Form -->
+    <VBox alignment="CENTER" spacing="0" HBox.hgrow="ALWAYS" style="-fx-background-color:white;-fx-padding:30;">
+        <VBox spacing="12" maxWidth="360" alignment="TOP_LEFT">
+            <Label text="Đăng nhập" styleClass="h1"/>
+            <Label text="Đăng nhập để tiếp tục, hoặc đăng ký tài khoản mới." styleClass="muted"/>
 
-    <PasswordField fx:id="passwordField" promptText="Mật khẩu (vd: 123)" maxWidth="200" style="-fx-font-size: 14px;"/>
+            <VBox spacing="3">
+                <Label text="Tên đăng nhập" styleClass="field-label"/>
+                <TextField fx:id="usernameField" promptText="Nhập tên đăng nhập"/>
+            </VBox>
 
-    <HBox spacing="10" alignment="CENTER">
-        <Button text="Đăng nhập" onAction="#handleLogin" style="-fx-font-size: 14px; -fx-cursor: hand; -fx-base: #2196F3;"/>
-        <Button text="Đăng ký Bidder" onAction="#handleRegisterBidder" style="-fx-font-size: 14px; -fx-cursor: hand;"/>
-        <Button text="Đăng ký Seller" onAction="#handleRegisterSeller" style="-fx-font-size: 14px; -fx-cursor: hand; -fx-base: #FF9800;"/>
-    </HBox>
-</VBox>
+            <VBox spacing="3">
+                <Label text="Mật khẩu" styleClass="field-label"/>
+                <PasswordField fx:id="passwordField" promptText="Nhập mật khẩu"/>
+            </VBox>
+
+            <Button text="Đăng nhập" onAction="#handleLogin" styleClass="btn-primary" maxWidth="Infinity"/>
+
+            <HBox spacing="8">
+                <Button text="Đăng ký Người mua" onAction="#handleRegisterBidder" styleClass="btn-secondary" HBox.hgrow="ALWAYS" maxWidth="Infinity"/>
+                <Button text="Đăng ký Người bán" onAction="#handleRegisterSeller" styleClass="btn-seller" HBox.hgrow="ALWAYS" maxWidth="Infinity"/>
+            </HBox>
+
+            <Label text="Chọn vai trò khi đăng ký: Người mua để đấu giá, Người bán để mở phiên." styleClass="caption" wrapText="true"/>
+        </VBox>
+    </VBox>
+
+</HBox>

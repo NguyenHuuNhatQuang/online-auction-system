@@ -1,0 +1,326 @@
+/* ============================================================
+   BidNow — JavaFX theme
+   ============================================================ */
+
+.root {
+  -fx-font-family: "Segoe UI", Helvetica, Arial, sans-serif;
+  -fx-font-size: 13px;
+  -fx-background-color: #F0F2F5;
+}
+
+/* -------- Typography -------- */
+.h1   { -fx-font-size: 22px; -fx-font-weight: bold; -fx-text-fill: #050505; }
+.h2   { -fx-font-size: 17px; -fx-font-weight: bold; -fx-text-fill: #050505; }
+.h3   { -fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #050505; }
+.muted{ -fx-text-fill: #65676B; -fx-font-size: 12.5px; }
+.caption{ -fx-text-fill: #65676B; -fx-font-size: 11.5px; }
+.price{ -fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: #1877F2; }
+.price-big{ -fx-font-size: 26px; -fx-font-weight: bold; -fx-text-fill: #1877F2; }
+
+/* -------- Cards -------- */
+.card {
+  -fx-background-color: #ffffff;
+  -fx-background-radius: 10;
+  -fx-border-radius: 10;
+  -fx-padding: 14;
+  -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.08), 6, 0, 0, 1);
+}
+.card-light {
+  -fx-background-color: #E7F3FF;
+  -fx-background-radius: 8;
+  -fx-padding: 10;
+}
+
+/* -------- Buttons -------- */
+.button {
+  -fx-background-radius: 6;
+  -fx-padding: 7 14 7 14;
+  -fx-font-size: 13px;
+  -fx-font-weight: bold;
+  -fx-cursor: hand;
+  -fx-text-fill: white;
+  -fx-background-color: #1877F2;
+  -fx-effect: none;
+}
+.button:hover { -fx-background-color: #166FE5; }
+.button:pressed{ -fx-translate-y: 1; }
+
+.btn-primary { -fx-background-color: #1877F2; -fx-text-fill: white; }
+.btn-primary:hover { -fx-background-color: #166FE5; }
+
+.btn-secondary { -fx-background-color: #E7F3FF; -fx-text-fill: #1877F2; }
+.btn-secondary:hover { -fx-background-color: #d3e7fb; }
+
+.btn-success { -fx-background-color: #42B72A; -fx-text-fill: white; }
+.btn-success:hover { -fx-background-color: #389A24; }
+
+.btn-warn { -fx-background-color: #F7B928; -fx-text-fill: white; }
+.btn-error { -fx-background-color: #FA383E; -fx-text-fill: white; }
+
+.btn-ghost { -fx-background-color: transparent; -fx-text-fill: #1877F2; }
+.btn-ghost:hover { -fx-background-color: #E7F3FF; }
+
+.btn-sm  { -fx-font-size: 11.5px; -fx-padding: 4 10 4 10; }
+.btn-lg  { -fx-font-size: 15px; -fx-padding: 10 22 10 22; }
+
+.btn-seller { -fx-background-color: #FF9800; -fx-text-fill: white; }
+.btn-seller:hover { -fx-background-color: #F57C00; }
+
+/* -------- Inputs -------- */
+.text-field, .password-field, .text-area, .combo-box {
+  -fx-background-color: white;
+  -fx-background-radius: 6;
+  -fx-border-color: #DADDE1;
+  -fx-border-radius: 6;
+  -fx-padding: 6 10 6 10;
+  -fx-font-size: 13px;
+  -fx-prompt-text-fill: #9aa0aa;
+}
+.text-field:focused, .password-field:focused, .text-area:focused, .combo-box:focused {
+  -fx-border-color: #1877F2;
+  -fx-effect: dropshadow(gaussian, rgba(24,119,242,0.18), 4, 0, 0, 0);
+}
+.text-area { -fx-padding: 4; }
+.text-area .content { -fx-background-color: white; }
+
+/* -------- Badges -------- */
+.badge {
+  -fx-background-radius: 50;
+  -fx-padding: 2 9 2 9;
+  -fx-font-size: 10.5px;
+  -fx-font-weight: bold;
+  -fx-text-fill: white;
+}
+.badge-live      { -fx-background-color: #FA383E; }
+.badge-finished  { -fx-background-color: #9aa0aa; }
+.badge-paid      { -fx-background-color: #1877F2; }
+.badge-bidder    { -fx-background-color: #9B51E0; }
+.badge-seller    { -fx-background-color: #FF9800; }
+.badge-cat {
+  -fx-background-color: #F0F2F5;
+  -fx-text-fill: #444;
+  -fx-border-color: #DADDE1;
+  -fx-border-radius: 50;
+}
+
+/* -------- Navbar -------- */
+.navbar {
+  -fx-background-color: white;
+  -fx-border-color: #DADDE1;
+  -fx-border-width: 0 0 1 0;
+  -fx-padding: 8 18 8 18;
+  -fx-spacing: 12;
+}
+.logo {
+  -fx-text-fill: #1877F2;
+  -fx-font-size: 20px;
+  -fx-font-weight: bold;
+  -fx-cursor: hand;
+}
+.search-bar {
+  -fx-background-color: #F0F2F5;
+  -fx-background-radius: 50;
+  -fx-border-radius: 50;
+  -fx-border-color: transparent;
+  -fx-padding: 7 14 7 14;
+  -fx-pref-width: 300;
+}
+.wallet-pill {
+  -fx-background-color: #FFF8E1;
+  -fx-border-color: #FFE082;
+  -fx-border-radius: 6;
+  -fx-background-radius: 6;
+  -fx-padding: 5 10 5 10;
+  -fx-font-size: 12px;
+  -fx-text-fill: #65676B;
+}
+.wallet-pill .label-strong { -fx-text-fill: #BF360C; -fx-font-weight: bold; }
+.conn-dot {
+  -fx-fill: #42B72A;
+}
+.avatar {
+  -fx-background-color: #E7F3FF;
+  -fx-background-radius: 50;
+  -fx-text-fill: #1877F2;
+  -fx-font-weight: bold;
+  -fx-alignment: center;
+  -fx-min-width: 28;
+  -fx-min-height: 28;
+  -fx-max-width: 28;
+  -fx-max-height: 28;
+  -fx-font-size: 12px;
+}
+.avatar-seller {
+  -fx-background-color: #FFE082;
+  -fx-text-fill: #BF360C;
+}
+
+/* -------- Split Hero (login/register) -------- */
+.hero-left {
+  -fx-background-color: linear-gradient(to bottom right, #1877F2, #0095F6);
+  -fx-padding: 48;
+}
+.hero-left .hero-title {
+  -fx-font-size: 42px;
+  -fx-font-weight: bold;
+  -fx-text-fill: white;
+}
+.hero-left .hero-lead {
+  -fx-font-size: 18px;
+  -fx-font-weight: bold;
+  -fx-text-fill: white;
+  -fx-opacity: 0.95;
+}
+.hero-left .hero-sub {
+  -fx-font-size: 13px;
+  -fx-text-fill: white;
+  -fx-opacity: 0.85;
+  -fx-wrap-text: true;
+}
+.hero-left .hero-feat {
+  -fx-font-size: 12.5px;
+  -fx-text-fill: white;
+  -fx-opacity: 0.9;
+}
+
+/* -------- Sidebar -------- */
+.sidebar {
+  -fx-background-color: white;
+  -fx-padding: 10;
+  -fx-border-color: #DADDE1;
+  -fx-border-width: 0 1 0 0;
+}
+.nav-item {
+  -fx-padding: 8 12 8 12;
+  -fx-background-radius: 5;
+  -fx-font-size: 13px;
+  -fx-font-weight: bold;
+  -fx-cursor: hand;
+  -fx-text-fill: #050505;
+}
+.nav-item:hover { -fx-background-color: #F0F2F5; }
+.nav-item-active {
+  -fx-background-color: #E7F3FF;
+  -fx-text-fill: #1877F2;
+}
+
+/* -------- Feed -------- */
+.feed-area {
+  -fx-background-color: #F0F2F5;
+  -fx-padding: 16;
+}
+
+/* -------- List -------- */
+.list-view {
+  -fx-background-color: transparent;
+  -fx-padding: 0;
+}
+.list-view .list-cell {
+  -fx-background-color: white;
+  -fx-padding: 10 14 10 14;
+  -fx-background-radius: 8;
+  -fx-border-radius: 8;
+  -fx-border-color: transparent;
+  -fx-border-width: 1;
+  -fx-font-size: 13px;
+}
+.list-view .list-cell:filled:hover {
+  -fx-background-color: white;
+  -fx-border-color: #1877F2;
+  -fx-effect: dropshadow(gaussian, rgba(24,119,242,0.18), 6, 0, 0, 1);
+}
+.list-view .list-cell:filled:selected {
+  -fx-background-color: #E7F3FF;
+  -fx-border-color: #1877F2;
+  -fx-text-fill: #050505;
+}
+.list-view .scroll-bar:vertical { -fx-pref-width: 8; }
+
+/* -------- Banners (auction result) -------- */
+.banner-win {
+  -fx-background-color: #E8F5E9;
+  -fx-border-color: #A5D6A7;
+  -fx-background-radius: 8;
+  -fx-border-radius: 8;
+  -fx-padding: 12 16 12 16;
+  -fx-text-fill: #1B5E20;
+}
+.banner-win .label { -fx-text-fill: #1B5E20; }
+
+.banner-lose {
+  -fx-background-color: #F5F5F5;
+  -fx-border-color: #DDDDDD;
+  -fx-background-radius: 8;
+  -fx-border-radius: 8;
+  -fx-padding: 12 16 12 16;
+  -fx-text-fill: #444;
+}
+
+.banner-paid {
+  -fx-background-color: #E3F2FD;
+  -fx-border-color: #90CAF9;
+  -fx-background-radius: 8;
+  -fx-border-radius: 8;
+  -fx-padding: 12 16 12 16;
+  -fx-text-fill: #0D47A1;
+}
+
+/* -------- Log area -------- */
+.log-area .content { -fx-background-color: #1a1f2e; }
+.log-area {
+  -fx-background-color: #1a1f2e;
+  -fx-text-fill: #d4d9e6;
+  -fx-font-family: "Consolas", monospace;
+  -fx-font-size: 11.5px;
+  -fx-background-radius: 6;
+}
+
+/* -------- Timer / hot info -------- */
+.timer-label   { -fx-text-fill: #FA383E; -fx-font-weight: bold; -fx-font-family: "Consolas", monospace; }
+.top-bidder    { -fx-text-fill: #1877F2; -fx-font-size: 13px; }
+
+/* -------- Section dividers -------- */
+.section-title { -fx-font-weight: bold; -fx-text-fill: #1565C0; -fx-font-size: 13px; }
+.section-title-green { -fx-font-weight: bold; -fx-text-fill: #2E7D32; -fx-font-size: 13px; }
+
+/* -------- Auction row (custom cell rendering) -------- */
+.auc-icon {
+  -fx-background-color: #E7F3FF;
+  -fx-background-radius: 6;
+  -fx-text-fill: #1877F2;
+  -fx-alignment: center;
+  -fx-font-weight: bold;
+  -fx-font-size: 14px;
+  -fx-min-width: 30;
+  -fx-min-height: 30;
+  -fx-max-width: 30;
+  -fx-max-height: 30;
+}
+.auc-icon-art {
+  -fx-background-color: #F3E5F5;
+  -fx-text-fill: #7B1FA2;
+}
+.auc-icon-paid {
+  -fx-background-color: #FFF9C4;
+  -fx-text-fill: #F57F17;
+}
+.auc-icon-finished {
+  -fx-background-color: #eeeeee;
+  -fx-text-fill: #999999;
+}
+
+/* -------- Form rows / fields -------- */
+.field-label {
+  -fx-font-size: 11.5px;
+  -fx-text-fill: #65676B;
+  -fx-font-weight: bold;
+}
+
+/* -------- Scrollpane -------- */
+.scroll-pane { -fx-background-color: transparent; }
+.scroll-pane > .viewport { -fx-background-color: transparent; }
+.scroll-pane .scroll-bar:vertical { -fx-pref-width: 10; }
+
+/* -------- ComboBox arrow -------- */
+.combo-box .arrow-button { -fx-background-color: transparent; }
+.combo-box .list-view { -fx-background-color: white; -fx-border-color: #DADDE1; }

@@ -2,25 +2,89 @@
 
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.Region?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.ListView?>
 <?import javafx.scene.control.Button?>
+<?import javafx.scene.control.TextField?>
 <?import javafx.geometry.Insets?>
 
-<VBox spacing="15.0" alignment="TOP_CENTER" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
-      fx:controller="com.auction.client.controllers.DashboardController">
+<BorderPane xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="com.auction.client.controllers.DashboardController"
+            prefWidth="1100" prefHeight="700">
 
-    <padding>
-        <Insets top="20" right="20" bottom="20" left="20"/>
-    </padding>
+    <!-- TOP: Navbar -->
+    <top>
+        <HBox styleClass="navbar" alignment="CENTER_LEFT" spacing="12">
+            <Label text="BidNow" styleClass="logo"/>
+            <TextField promptText="Tìm phiên đấu giá..." styleClass="search-bar"/>
+            <Region HBox.hgrow="ALWAYS"/>
+            <HBox styleClass="wallet-pill" alignment="CENTER" spacing="4">
+                <Label text="Ví:"/>
+                <Label fx:id="walletLabel" text="1.000.000.000 ₫" styleClass="label-strong" style="-fx-font-weight:bold;-fx-text-fill:#BF360C;"/>
+            </HBox>
+            <Label text="●" style="-fx-text-fill:#42B72A;-fx-font-size:12px;"/>
+            <Label text="Realtime" styleClass="caption"/>
+            <Label fx:id="welcomeLabel" text="Sảnh Chờ Đấu Giá" styleClass="h3"/>
+        </HBox>
+    </top>
 
-    <Label fx:id="welcomeLabel" text="Sảnh Chờ Đấu Giá" style="-fx-font-size: 18px; -fx-font-weight: bold;"/>
+    <!-- CENTER: 3-column dashboard -->
+    <center>
+        <HBox>
+            <!-- Sidebar -->
+            <VBox styleClass="sidebar" spacing="2" prefWidth="200">
+                <Label text="Tất cả" styleClass="nav-item, nav-item-active"/>
+                <Label text="Đang diễn ra" styleClass="nav-item"/>
+                <Label text="Đã kết thúc" styleClass="nav-item"/>
+                <Label text="Của tôi" styleClass="nav-item"/>
+                <Region prefHeight="8"/>
+                <Label text="LOẠI SẢN PHẨM" styleClass="caption" style="-fx-padding:4 10 4 10;"/>
+                <Label text="Electronics" styleClass="nav-item"/>
+                <Label text="Art" styleClass="nav-item"/>
+                <Region VBox.vgrow="ALWAYS"/>
+                <Button fx:id="createAuctionBtn" text="Quản Lý Kho" onAction="#handleGoToManageProducts" styleClass="btn-seller" maxWidth="Infinity"/>
+            </VBox>
 
-    <ListView fx:id="auctionListView" VBox.vgrow="ALWAYS" style="-fx-font-size: 14px;"/>
+            <!-- Feed -->
+            <VBox styleClass="feed-area" spacing="10" HBox.hgrow="ALWAYS">
+                <HBox alignment="CENTER_LEFT" spacing="10">
+                    <Label text="Phiên đấu giá" styleClass="h2"/>
+                    <Region HBox.hgrow="ALWAYS"/>
+                    <Button text="Tham Gia Phiên" onAction="#handleJoinAuction" styleClass="btn-success"/>
+                </HBox>
+                <ListView fx:id="auctionListView" VBox.vgrow="ALWAYS" styleClass="list-view"/>
+            </VBox>
 
-    <HBox spacing="20" alignment="CENTER">
-        <Button fx:id="createAuctionBtn" text="Quản Lý Kho Sản Phẩm" onAction="#handleGoToManageProducts" style="-fx-font-size: 14px; -fx-cursor: hand; -fx-base: #2196F3;"/>
-        <Button text="Tham Gia Phiên" onAction="#handleJoinAuction" style="-fx-font-size: 14px; -fx-cursor: hand; -fx-base: #4CAF50;"/>
-    </HBox>
+            <!-- Right rail -->
+            <VBox prefWidth="240" style="-fx-background-color:white;-fx-padding:14;-fx-border-color:#DADDE1;-fx-border-width:0 0 0 1;" spacing="10">
+                <Label text="Thống kê" styleClass="h3"/>
+                <HBox spacing="8">
+                    <VBox styleClass="card" alignment="CENTER" HBox.hgrow="ALWAYS" style="-fx-padding:10;">
+                        <Label fx:id="statRunning" text="0" style="-fx-font-size:20px;-fx-font-weight:bold;-fx-text-fill:#FA383E;"/>
+                        <Label text="Đang LIVE" styleClass="caption"/>
+                    </VBox>
+                    <VBox styleClass="card" alignment="CENTER" HBox.hgrow="ALWAYS" style="-fx-padding:10;">
+                        <Label fx:id="statPaid" text="0" style="-fx-font-size:20px;-fx-font-weight:bold;-fx-text-fill:#1877F2;"/>
+                        <Label text="Đã PAID" styleClass="caption"/>
+                    </VBox>
+                </HBox>
+                <HBox spacing="8">
+                    <VBox styleClass="card" alignment="CENTER" HBox.hgrow="ALWAYS" style="-fx-padding:10;">
+                        <Label fx:id="statMy" text="0" style="-fx-font-size:20px;-fx-font-weight:bold;-fx-text-fill:#F7B928;"/>
+                        <Label fx:id="statMyLabel" text="Của bạn" styleClass="caption"/>
+                    </VBox>
+                    <VBox styleClass="card" alignment="CENTER" HBox.hgrow="ALWAYS" style="-fx-padding:10;">
+                        <Label fx:id="statWon" text="0" style="-fx-font-size:20px;-fx-font-weight:bold;-fx-text-fill:#42B72A;"/>
+                        <Label text="Đã thắng" styleClass="caption"/>
+                    </VBox>
+                </HBox>
+                <Region prefHeight="8"/>
+                <Label text="Đang nóng" styleClass="h3"/>
+                <Label text="Tự cập nhật khi có phiên mới" styleClass="caption" wrapText="true"/>
+            </VBox>
+        </HBox>
+    </center>
 
-</VBox>
+</BorderPane>

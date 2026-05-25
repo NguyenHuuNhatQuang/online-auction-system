@@ -42,8 +42,14 @@ public class SceneManager {
     try {
       FXMLLoader loader = new FXMLLoader(getClass().getResource(fxmlPath));
       Parent root = loader.load();
-      Scene scene = new Scene(root, 600, 400); // Cố định kích thước cửa sổ tối giản
-      primaryStage.setTitle(title);
+      // Kích thước rộng hơn cho UI BidNow
+      Scene scene = new Scene(root, 1100, 720);
+      // Nạp stylesheet BidNow
+      java.net.URL css = getClass().getResource("/css/bidnow.css");
+      if (css != null) {
+        scene.getStylesheets().add(css.toExternalForm());
+      }
+      primaryStage.setTitle("BidNow — " + title);
       primaryStage.setScene(scene);
       primaryStage.show();
     } catch (IOException e) {
