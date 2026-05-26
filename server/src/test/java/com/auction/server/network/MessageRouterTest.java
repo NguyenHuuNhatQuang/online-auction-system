@@ -44,6 +44,16 @@ class MessageRouterTest {
 
   @BeforeEach
   void setUp() throws Exception {
+    // 1. Chờ hàng đợi chạy xong mọi thứ thừa thãi từ test trước để nhả lock file
+    com.auction.server.database.DatabaseWriteQueue.getInstance().flushForTesting();
+
+    // 2. Dọn sạch bộ nhớ đệm trên RAM
+    com.auction.server.services.AuctionManager.getInstance().clearCacheForTesting();
+
+    // 3. Xóa file an toàn và khởi tạo lại bảng
+    java.nio.file.Files.deleteIfExists(java.nio.file.Paths.get("auction_system.db"));
+    com.auction.server.database.DatabaseConnection.initDatabase();
+
     // Khởi tạo router thực tế, nhưng nhét cái server giả vào
     messageRouter = new MessageRouter(mockServer);
 
@@ -140,6 +150,8 @@ class MessageRouterTest {
     com.auction.common.models.Item testItem = new com.auction.common.models.Electronics("item_mock_999", "Laptop Gaming", "Mới 100%", 24);
     com.auction.server.services.ItemManager.getInstance().addItem(testItem, "seller_99");
 
+    com.auction.server.database.DatabaseWriteQueue.getInstance().flushForTesting();
+
     // 2. Chuẩn bị chuỗi JSON mô phỏng lệnh tạo phiên (CẬP NHẬT: Dùng itemId thay vì itemType/itemName)
     String createAuctionJson = "{"
         + "\"action\": \"CREATE_AUCTION\","
@@ -225,23 +237,30 @@ class MessageRouterTest {
   @Test
   @DisplayName("Định tuyến đúng khi gửi JSON lệnh UPDATE_ITEM")
   void testRoute_UpdateItem() {
-    // Chuẩn bị dữ liệu: Thêm trước một sản phẩm vào kho
+    // 1. Chuẩn bị dữ liệu: Thêm trước một sản phẩm vào kho
     Item testItem = new Electronics("item_to_update", "Old Name", "Old Desc", 12);
     com.auction.server.services.ItemManager.getInstance().addItem(testItem, "seller_99");
+
+    // ÉP ĐỢI: Chờ ghi xong sản phẩm mồi vào DB
+    com.auction.server.database.DatabaseWriteQueue.getInstance().flushForTesting();
 
     String updateJson = "{"
         + "\"action\": \"UPDATE_ITEM\","
         + "\"payload\": \"{\\\"itemId\\\":\\\"item_to_update\\\", \\\"newName\\\":\\\"New Name\\\", \\\"newDesc\\\":\\\"New Desc\\\", \\\"sellerId\\\":\\\"seller_99\\\"}\""
         + "}";
 
+    // 2. Kích hoạt định tuyến lệnh sửa sản phẩm
     messageRouter.route(updateJson, mockClient);
 
-    // Kiểm tra xem Item trong kho đã thực sự đổi tên chưa
+    // THÊM DÒNG NÀY: ÉP ĐỢI: Chờ tác vụ CẬP NHẬT (UPDATE) chạy xong dưới DB
+    com.auction.server.database.DatabaseWriteQueue.getInstance().flushForTesting();
+
+    // 3. Kiểm tra xem Item trong kho đã thực sự đổi tên chưa
     Item updatedItem = com.auction.server.services.ItemManager.getInstance().getItem("item_to_update");
     assertEquals("New Name", updatedItem.getName(), "Tên sản phẩm phải được cập nhật");
     assertEquals("New Desc", updatedItem.getDescription(), "Mô tả sản phẩm phải được cập nhật");
 
-    // Kiểm tra xem Client có nhận được danh sách kho hàng mới không
+    // 4. Kiểm tra xem Client có nhận được danh sách kho hàng mới không
     ArgumentCaptor<String> messageCaptor = ArgumentCaptor.forClass(String.class);
     verify(mockClient).sendMessage(messageCaptor.capture());
     assertTrue(messageCaptor.getValue().contains("SELLER_ITEMS_LIST"), "Phải trả về danh sách cập nhật");

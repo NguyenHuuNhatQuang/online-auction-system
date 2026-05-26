@@ -4,10 +4,13 @@ import com.auction.common.models.Auction;
 import com.auction.common.models.Item;
 import com.auction.common.models.Seller;
 import com.auction.common.models.Electronics;
+import com.auction.server.database.DatabaseConnection;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.time.LocalDateTime;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -21,6 +24,23 @@ class AuctionManagerTest {
 
   @BeforeEach
   void setUp() {
+    // 1. Chờ hàng đợi chạy xong mọi thứ thừa thãi từ test trước để nhả lock file
+    com.auction.server.database.DatabaseWriteQueue.getInstance().flushForTesting();
+
+    // 2. Dọn sạch bộ nhớ đệm trên RAM
+    com.auction.server.services.AuctionManager.getInstance().clearCacheForTesting();
+
+    try {
+      // 1. Xóa file database cũ nếu tồn tại
+      Files.deleteIfExists(Paths.get("auction_system.db"));
+
+      // 2. Tạo lại file và cấu trúc bảng mới tinh
+      DatabaseConnection.initDatabase();
+
+    } catch (Exception e) {
+      System.err.println("Lỗi dọn dẹp database trước khi test: " + e.getMessage());
+    }
+
     auctionManager = AuctionManager.getInstance();
     // Xóa sạch dữ liệu cũ trong bộ nhớ (nếu có) do đặc thù Singleton lưu state toàn cục
     auctionManager.getAllAuctions().clear();

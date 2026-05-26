@@ -1,10 +1,13 @@
 package com.auction.server.services;
 
 import com.auction.common.models.*;
+import com.auction.server.database.DatabaseConnection;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -26,6 +29,23 @@ class BiddingServiceTest {
 
   @BeforeEach
   void setUp() {
+    // 1. Chờ hàng đợi chạy xong mọi thứ thừa thãi từ test trước để nhả lock file
+    com.auction.server.database.DatabaseWriteQueue.getInstance().flushForTesting();
+
+    // 2. Dọn sạch bộ nhớ đệm trên RAM
+    com.auction.server.services.AuctionManager.getInstance().clearCacheForTesting();
+
+    try {
+      // 1. Xóa file database cũ nếu tồn tại
+      Files.deleteIfExists(Paths.get("auction_system.db"));
+
+      // 2. Tạo lại file và cấu trúc bảng mới tinh
+      DatabaseConnection.initDatabase();
+
+    } catch (Exception e) {
+      System.err.println("Lỗi dọn dẹp database trước khi test: " + e.getMessage());
+    }
+
     // Reset Singleton và Service trước mỗi test case
     auctionManager = AuctionManager.getInstance();
     biddingService = new BiddingService();

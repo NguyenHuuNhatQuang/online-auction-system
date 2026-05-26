@@ -316,11 +316,8 @@ public class MessageRouter {
       String newDesc = node.get("newDesc").asText();
       String sellerId = node.get("sellerId").asText();
 
-      Item item = com.auction.server.services.ItemManager.getInstance().getItem(itemId);
-      if (item != null) {
-        item.setName(newName);
-        item.setDescription(newDesc);
-      }
+      com.auction.server.services.ItemManager.getInstance().updateItem(itemId, newName, newDesc);
+
       sendSellerItems(sellerId, client); // Refresh lại list
     } catch (Exception e) {
       sendError(client, "Lỗi cập nhật sản phẩm.");

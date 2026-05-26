@@ -52,4 +52,19 @@ public class DatabaseWriteQueue {
       writerThread.shutdownNow();
     }
   }
+
+  /**
+   * HÀM DÀNH RIÊNG CHO UNIT TEST.
+   * Ép luồng chính phải chờ cho đến khi toàn bộ các lệnh trong hàng đợi được ghi xong.
+   * Điều này giúp nhả file lock và đảm bảo dữ liệu đã sẵn sàng để truy vấn.
+   */
+  public void flushForTesting() {
+    try {
+      // Ném một tác vụ rỗng vào hàng đợi và dùng .get() để block luồng hiện tại
+      // cho đến khi tác vụ rỗng này (và mọi tác vụ trước nó) chạy xong.
+      writerThread.submit(() -> {}).get();
+    } catch (Exception e) {
+      // Bỏ qua lỗi trong lúc test
+    }
+  }
 }

@@ -17,6 +17,12 @@ import static org.junit.jupiter.api.Assertions.*;
 class UserManagerTest {
   @BeforeEach
   void setUp() {
+    // 1. Chờ hàng đợi chạy xong mọi thứ thừa thãi từ test trước để nhả lock file
+    com.auction.server.database.DatabaseWriteQueue.getInstance().flushForTesting();
+
+    // 2. Dọn sạch bộ nhớ đệm trên RAM
+    com.auction.server.services.AuctionManager.getInstance().clearCacheForTesting();
+
     try {
       // 1. Xóa file database cũ nếu tồn tại
       Files.deleteIfExists(Paths.get("auction_system.db"));

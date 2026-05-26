@@ -1,33 +1,25 @@
 package com.auction.server.services;
 
 import com.auction.common.models.Auction;
+import com.auction.server.database.AuctionDAO;
+import com.auction.server.database.DatabaseWriteQueue;
 
 import java.util.Collection;
 import java.util.concurrent.ConcurrentHashMap;
 
-/**
- * Lớp quản lý trung tâm toàn bộ các phiên đấu giá đang hoạt động trên Server.
- * Áp dụng mẫu thiết kế Singleton để đảm bảo chỉ có duy nhất một bộ quản lý trong toàn hệ thống.
- */
 public class AuctionManager {
 
   private static volatile AuctionManager instance;
+  private final ConcurrentHashMap<String, Auction> auctions;
+  private final AuctionDAO auctionDAO;
 
-  // Sử dụng ConcurrentHashMap để đảm bảo an toàn khi nhiều luồng (Thread) cùng thêm/đọc phiên đấu giá
-  private final ConcurrentHashMap<String, Auction> activeAuctions;
-
-  /**
-   * Constructor private để ngăn chặn việc khởi tạo từ bên ngoài.
-   */
   private AuctionManager() {
-    activeAuctions = new ConcurrentHashMap<>();
+    this.auctions = new ConcurrentHashMap<>();
+    this.auctionDAO = new AuctionDAO();
+    // TỰ ĐỘNG KHÔI PHỤC TOÀN BỘ PHIÊN TỪ DATABASE LÊN RAM KHI BẬT SERVER
+    loadAuctionsFromDatabase();
   }
 
-  /**
-   * Lấy instance duy nhất của AuctionManager (Thread-safe Singleton).
-   *
-   * @return Thể hiện duy nhất của AuctionManager.
-   */
   public static AuctionManager getInstance() {
     if (instance == null) {
       synchronized (AuctionManager.class) {
@@ -39,33 +31,62 @@ public class AuctionManager {
     return instance;
   }
 
-  /**
-   * Thêm một phiên đấu giá mới vào hệ thống quản lý.
-   *
-   * @param auction Đối tượng phiên đấu giá cần thêm.
-   */
+  private void loadAuctionsFromDatabase() {
+    try {
+      Collection<Auction> dbAuctions = auctionDAO.getAllAuctions();
+      for (Auction a : dbAuctions) {
+        auctions.put(a.getId(), a);
+      }
+      System.out.println("[AuctionManager] Đồng bộ thành công " + dbAuctions.size() + " phiên đấu giá từ SQLite lên bộ nhớ RAM.");
+    } catch (Exception e) {
+      System.err.println("[AuctionManager] Lỗi khởi chạy khôi phục dữ liệu: " + e.getMessage());
+    }
+  }
+
   public void addAuction(Auction auction) {
-    if (auction != null && auction.getId() != null) {
-      activeAuctions.put(auction.getId(), auction);
+    // 1. Ghi vào bộ nhớ đệm RAM phục vụ kết nối mạng realtime lập tức
+    auctions.put(auction.getId(), auction);
+
+    // 2. Xếp hàng tác vụ I/O xuống đĩa cứng
+    DatabaseWriteQueue.getInstance().execute(() -> {
+      try {
+        auctionDAO.insertAuction(auction);
+      } catch (Exception e) {
+        System.err.println("[AuctionManager] Lỗi ghi phiên đấu giá mới vào DB: " + e.getMessage());
+      }
+    });
+  }
+
+  public Auction getAuction(String auctionId) {
+    return auctions.get(auctionId);
+  }
+
+  public Collection<Auction> getAllAuctions() {
+    return auctions.values();
+  }
+
+  public void updateAuctionStatus(String auctionId, String status) {
+    Auction auction = auctions.get(auctionId);
+    if (auction != null) {
+      // Đổi trạng thái trên RAM
+      auction.setStatus(status);
+
+      // Đồng bộ bất đồng bộ xuống DB
+      DatabaseWriteQueue.getInstance().execute(() -> {
+        try {
+          auctionDAO.updateAuctionStatus(auctionId, status);
+        } catch (Exception e) {
+          System.err.println("[AuctionManager] Lỗi lưu trạng thái phiên " + status + " vào DB: " + e.getMessage());
+        }
+      });
     }
   }
 
   /**
-   * Lấy thông tin một phiên đấu giá dựa trên ID.
-   *
-   * @param auctionId ID của phiên đấu giá.
-   * @return Đối tượng Auction, hoặc null nếu không tìm thấy.
+   * HÀM DÀNH RIÊNG CHO UNIT TEST.
+   * Xóa sạch bộ nhớ đệm trên RAM để bài test mới không bị dính dữ liệu cũ.
    */
-  public Auction getAuction(String auctionId) {
-    return activeAuctions.get(auctionId);
-  }
-
-  /**
-   * Lấy danh sách tất cả các phiên đấu giá đang được quản lý.
-   *
-   * @return Tập hợp (Collection) các phiên đấu giá.
-   */
-  public Collection<Auction> getAllAuctions() {
-    return activeAuctions.values();
+  public void clearCacheForTesting() {
+    auctions.clear();
   }
 }

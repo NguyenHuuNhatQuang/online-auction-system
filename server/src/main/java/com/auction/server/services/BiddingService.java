@@ -3,6 +3,7 @@ package com.auction.server.services;
 import com.auction.common.models.Auction;
 import com.auction.common.models.BidTransaction;
 import com.auction.common.models.Bidder;
+import com.auction.server.database.DatabaseWriteQueue;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -19,6 +20,8 @@ public class BiddingService {
 
   // Lưu trữ khóa (Lock) riêng biệt cho từng phiên đấu giá
   private final ConcurrentHashMap<String, ReentrantLock> auctionLocks;
+  private final com.auction.server.database.BidTransactionDAO bidTransactionDAO = new com.auction.server.database.BidTransactionDAO();
+  private final com.auction.server.database.AuctionDAO auctionDAO = new com.auction.server.database.AuctionDAO();
 
   /**
    * Khởi tạo BiddingService.
@@ -90,8 +93,18 @@ public class BiddingService {
           LocalDateTime.now()
       );
 
-      // TODO: Gọi DAO để lưu transaction vào cơ sở dữ liệu (Database)
+      String transactionId = "TX_" + java.util.UUID.randomUUID().toString().substring(0, 8);
+      com.auction.common.models.BidTransaction bidTx = new com.auction.common.models.BidTransaction(transactionId, auctionId, bidder, bidAmount, java.time.LocalDateTime.now());
 
+      DatabaseWriteQueue.getInstance().execute(() -> {
+        try {
+          new com.auction.server.database.BidTransactionDAO().insertBid(bidTx);
+          new com.auction.server.database.AuctionDAO().updateAuctionPriceAndBidder(auctionId, bidAmount, bidder.getId());
+          System.out.println("[BiddingService] Đã lưu giao dịch nâng giá của " + bidder.getUsername() + " vào SQLite.");
+        } catch (Exception e) {
+          System.err.println("[BiddingService] Lỗi ghi nhật ký đặt giá vào DB: " + e.getMessage());
+        }
+      });
       System.out.println("[BiddingService] Người dùng " + bidder.getUsername() +
           " đã đặt giá thành công " + bidAmount + " cho phiên " + auctionId);
 
