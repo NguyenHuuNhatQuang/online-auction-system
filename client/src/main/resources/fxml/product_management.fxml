@@ -2,40 +2,106 @@
 
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.ColumnConstraints?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.ListView?>
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.TextField?>
 <?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.layout.FlowPane?>
 <?import javafx.geometry.Insets?>
 
-<VBox spacing="12.0" alignment="TOP_CENTER" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
-      fx:controller="com.auction.client.controllers.ProductManagementController">
-    <padding>
-        <Insets top="15" right="15" bottom="15" left="15"/>
-    </padding>
+<VBox xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.auction.client.controllers.InventoryCardController">
 
-    <Label text="QUẢN LÝ KHO SẢN PHẨM (SELLER)" style="-fx-font-size: 18px; -fx-font-weight: bold;"/>
-
-    <ListView fx:id="itemListView" VBox.vgrow="ALWAYS" style="-fx-font-size: 13px;"/>
-
-    <Label text="Thêm Sản Phẩm Mới" style="-fx-font-weight: bold; -fx-text-fill: #1565C0;"/>
-    <HBox spacing="8" alignment="CENTER">
-        <TextField fx:id="nameField" promptText="Tên sản phẩm..." prefWidth="120"/>
-        <TextField fx:id="descField" promptText="Mô tả..." prefWidth="120"/>
-        <ComboBox fx:id="typeComboBox" promptText="Loại" prefWidth="110"/>
-        <TextField fx:id="attrField" promptText="Bảo hành/Tác giả..." prefWidth="120"/>
-        <Button text="Thêm Vào Kho" onAction="#handleAddItem" style="-fx-base: #2196F3; -fx-cursor: hand;"/>
+    <!-- Navbar -->
+    <HBox styleClass="navbar" alignment="CENTER_LEFT" spacing="14">
+        <Button text="← Sảnh chờ" onAction="#handleBack" styleClass="btn-ghost"/>
+        <Label text="BidNow" styleClass="nav-logo"/>
+        <Region HBox.hgrow="ALWAYS"/>
+        <Label text="Kho hàng" styleClass="user-name"/>
     </HBox>
 
-    <Label text="Thao Tác Trên Sản Phẩm Đang Chọn" style="-fx-font-weight: bold; -fx-text-fill: #2E7D32;"/>
-    <HBox spacing="10" alignment="CENTER">
-        <TextField fx:id="startPriceField" promptText="Giá khởi điểm ($)..." prefWidth="120"/>
-        <TextField fx:id="durationField" promptText="Thời gian (phút)..." prefWidth="120"/>
-        <Button text="Đưa Lên Sàn Đấu Giá" onAction="#handleLaunchAuction" style="-fx-base: #4CAF50; -fx-cursor: hand;"/>
-        <Button text="Xóa Khỏi Kho" onAction="#handleDeleteItem" style="-fx-base: #f44336; -fx-cursor: hand;"/>
-        <Button text="Cập Nhật Tên/Mô Tả" onAction="#handleEditItem" style="-fx-base: #FF9800; -fx-cursor: hand;"/>
-    </HBox>
+    <ScrollPane fitToWidth="true" styleClass="feed-bg" VBox.vgrow="ALWAYS" style="-fx-background-color: -bidnow-bg;">
+        <VBox spacing="16" styleClass="feed-bg">
+            <padding><Insets top="22" right="24" bottom="22" left="24"/></padding>
 
-    <Button text="Quay lại Sảnh Chờ" onAction="#handleBack" style="-fx-margin-top: 5px; -fx-cursor: hand;"/>
+            <Label text="📦 Quản Lý Kho Sản Phẩm" styleClass="text-title"/>
+            <Label text="Click một sản phẩm trong kho để chọn, rồi đặt giá khởi điểm và đưa lên sàn." styleClass="text-muted"/>
+
+            <!-- Inventory: lưới thẻ sản phẩm -->
+            <VBox styleClass="card" spacing="10">
+                <HBox alignment="CENTER_LEFT">
+                    <Label text="Kho hiện tại" styleClass="text-subtitle"/>
+                    <Region HBox.hgrow="ALWAYS"/>
+                    <Label fx:id="invCount" text="0 sản phẩm" styleClass="text-muted"/>
+                </HBox>
+                <ScrollPane fx:id="invScroll" styleClass="lobby-scroll" fitToWidth="true" prefHeight="250">
+                    <FlowPane fx:id="invGrid" hgap="14" vgap="14">
+                        <padding><Insets top="4" right="4" bottom="4" left="4"/></padding>
+                    </FlowPane>
+                </ScrollPane>
+                <!-- ListView ẩn: chỉ giữ selection cho các thao tác cũ -->
+                <ListView fx:id="itemListView" prefHeight="0" visible="false" managed="false"/>
+            </VBox>
+
+            <!-- Add product -->
+            <VBox styleClass="card" spacing="12">
+                <Label text="➕ Thêm sản phẩm mới" styleClass="h3" style="-fx-font-size: 16px; -fx-font-weight: bold;"/>
+                <GridPane hgap="10" vgap="10">
+                    <columnConstraints>
+                        <ColumnConstraints percentWidth="50"/>
+                        <ColumnConstraints percentWidth="50"/>
+                    </columnConstraints>
+                    <VBox spacing="4" GridPane.columnIndex="0" GridPane.rowIndex="0">
+                        <Label text="TÊN SẢN PHẨM" styleClass="text-section"/>
+                        <TextField fx:id="nameField"/>
+                    </VBox>
+                    <VBox spacing="4" GridPane.columnIndex="1" GridPane.rowIndex="0">
+                        <Label text="MÔ TẢ" styleClass="text-section"/>
+                        <TextField fx:id="descField"/>
+                    </VBox>
+                    <VBox spacing="4" GridPane.columnIndex="0" GridPane.rowIndex="1">
+                        <Label text="LOẠI SẢN PHẨM" styleClass="text-section"/>
+                        <ComboBox fx:id="typeComboBox" maxWidth="Infinity"/>
+                    </VBox>
+                    <VBox spacing="4" GridPane.columnIndex="1" GridPane.rowIndex="1">
+                        <Label text="BẢO HÀNH (THÁNG) / TÁC GIẢ" styleClass="text-section"/>
+                        <TextField fx:id="attrField"/>
+                    </VBox>
+                </GridPane>
+                <HBox alignment="CENTER_RIGHT">
+                    <Button text="Thêm Vào Kho" onAction="#handleAddItem" styleClass="btn-primary"/>
+                </HBox>
+            </VBox>
+
+            <!-- Operations on selected -->
+            <VBox styleClass="card, card-selected" spacing="12">
+                <Label text="🚀 Thao tác trên sản phẩm đang chọn" styleClass="h3" style="-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: -bidnow-primary;"/>
+                <GridPane hgap="10" vgap="10">
+                    <columnConstraints>
+                        <ColumnConstraints percentWidth="50"/>
+                        <ColumnConstraints percentWidth="50"/>
+                    </columnConstraints>
+                    <VBox spacing="4" GridPane.columnIndex="0" GridPane.rowIndex="0">
+                        <Label text="GIÁ KHỞI ĐIỂM (VND)" styleClass="text-section"/>
+                        <TextField fx:id="startPriceField"/>
+                    </VBox>
+                    <VBox spacing="4" GridPane.columnIndex="1" GridPane.rowIndex="0">
+                        <Label text="THỜI LƯỢNG (PHÚT)" styleClass="text-section"/>
+                        <TextField fx:id="durationField"/>
+                    </VBox>
+                </GridPane>
+                <HBox spacing="10" alignment="CENTER_RIGHT">
+                    <Button text="Đưa Lên Sàn" onAction="#handleLaunchAuction" styleClass="btn-success"/>
+                    <Button text="Cập Nhật Tên/Mô Tả" onAction="#handleEditItem" styleClass="btn-warning"/>
+                    <Button text="Xóa Khỏi Kho" onAction="#handleDeleteItem" styleClass="btn-danger"/>
+                </HBox>
+                <Label text="Đặt tên/mô tả mới ở ô phía trên rồi bấm Cập Nhật (UPDATE_ITEM). Cập nhật được server hỗ trợ đầy đủ." styleClass="caption" wrapText="true"/>
+            </VBox>
+        </VBox>
+    </ScrollPane>
 </VBox>
