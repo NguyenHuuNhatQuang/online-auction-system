@@ -1,0 +1,585 @@
+/* ============================================================
+   BidNow — Modern light theme (JavaFX CSS)
+   Palette bám theo mockup: Facebook-blue, card trắng, nền xám nhạt.
+   Giữ bố cục FXML cũ, chỉ thay "skin" cho đỡ đơn điệu.
+   Tokens (looked-up colors) khai báo 1 lần trên .root.
+   ============================================================ */
+
+.root {
+    /* ---- Design tokens ---- */
+    -bidnow-primary:        #1877F2;
+    -bidnow-primary-hover:  #166FE5;
+    -bidnow-primary-press:  #1257B5;
+    -bidnow-primary-light:  #E7F3FF;
+    -bidnow-accent:         #0095F6;
+
+    -bidnow-bg:        #F0F2F5;
+    -bidnow-card:      #FFFFFF;
+    -bidnow-field:     #F0F2F5;
+
+    -bidnow-text:      #050505;
+    -bidnow-muted:     #65676B;
+    -bidnow-border:    #DADDE1;
+    -bidnow-divider:   #EBEDF0;
+
+    -bidnow-success:  #42B72A;
+    -bidnow-error:    #FA383E;
+    -bidnow-warn:     #F7B928;
+    -bidnow-bidder:   #9B51E0;
+    -bidnow-seller:   #FF9800;
+
+    -fx-background-color: -bidnow-bg;
+    -fx-font-family: "Segoe UI", "Helvetica Neue", sans-serif;
+    -fx-font-size: 14px;
+}
+
+/* ---------- Typography ---------- */
+.label { -fx-text-fill: -bidnow-text; }
+
+.text-title {
+    -fx-font-size: 28px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -bidnow-text;
+}
+.text-subtitle {
+    -fx-font-size: 20px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -bidnow-text;
+}
+.text-muted {
+    -fx-text-fill: -bidnow-muted;
+    -fx-font-size: 13px;
+}
+.text-section {
+    -fx-font-size: 12px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -bidnow-muted;
+}
+
+/* Brand wordmark: "Bid" + accented "Now" */
+.brand {
+    -fx-font-size: 40px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -bidnow-text;
+}
+.brand-accent {
+    -fx-font-size: 40px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -bidnow-primary;
+}
+
+/* ---------- Cards / surfaces ---------- */
+.card {
+    -fx-background-color: -bidnow-card;
+    -fx-background-radius: 12px;
+    -fx-border-radius: 12px;
+    -fx-border-color: -bidnow-border;
+    -fx-border-width: 1px;
+    -fx-padding: 24px;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.08), 14, 0, 0, 4);
+}
+.card-2 {
+    -fx-background-color: -bidnow-card;
+    -fx-background-radius: 10px;
+    -fx-border-radius: 10px;
+    -fx-border-color: -bidnow-border;
+    -fx-border-width: 1px;
+    -fx-padding: 16px;
+}
+.app-bar {
+    -fx-background-color: -bidnow-card;
+    -fx-padding: 14px 24px 14px 24px;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.10), 8, 0, 0, 2);
+}
+
+/* ---------- Buttons ---------- */
+.button {
+    -fx-background-radius: 8px;
+    -fx-border-radius: 8px;
+    -fx-padding: 10px 18px;
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+    -fx-cursor: hand;
+    -fx-background-color: -bidnow-primary-light;
+    -fx-text-fill: -bidnow-primary;
+    -fx-border-color: transparent;
+}
+.button:hover   { -fx-background-color: #D4E9FF; }
+.button:pressed { -fx-translate-y: 1px; }
+.button:disabled { -fx-opacity: 0.5; -fx-cursor: default; }
+
+/* Primary */
+.btn-primary {
+    -fx-background-color: -bidnow-primary;
+    -fx-text-fill: white;
+    -fx-effect: dropshadow(gaussian, rgba(24,119,242,0.30), 8, 0, 0, 3);
+}
+.btn-primary:hover   { -fx-background-color: -bidnow-primary-hover; }
+.btn-primary:pressed { -fx-background-color: -bidnow-primary-press; -fx-translate-y: 1px; }
+
+/* Secondary (soft blue) */
+.btn-secondary {
+    -fx-background-color: -bidnow-primary-light;
+    -fx-text-fill: -bidnow-primary;
+}
+.btn-secondary:hover { -fx-background-color: #D4E9FF; }
+
+/* Success */
+.btn-success {
+    -fx-background-color: -bidnow-success;
+    -fx-text-fill: white;
+    -fx-effect: dropshadow(gaussian, rgba(66,183,42,0.30), 8, 0, 0, 3);
+}
+.btn-success:hover   { -fx-background-color: #3AA625; }
+.btn-success:pressed { -fx-translate-y: 1px; }
+
+/* Danger / error */
+.btn-danger {
+    -fx-background-color: -bidnow-error;
+    -fx-text-fill: white;
+}
+.btn-danger:hover   { -fx-background-color: #E22B31; }
+.btn-danger:pressed { -fx-translate-y: 1px; }
+
+/* Warning */
+.btn-warning {
+    -fx-background-color: -bidnow-warn;
+    -fx-text-fill: #3A2A02;
+}
+.btn-warning:hover   { -fx-background-color: #E5A912; }
+.btn-warning:pressed { -fx-translate-y: 1px; }
+
+/* Seller-orange */
+.btn-seller {
+    -fx-background-color: -bidnow-seller;
+    -fx-text-fill: white;
+}
+.btn-seller:hover { -fx-background-color: #F08C00; }
+
+/* Bidder-purple */
+.btn-bidder {
+    -fx-background-color: -bidnow-bidder;
+    -fx-text-fill: white;
+}
+.btn-bidder:hover { -fx-background-color: #8A40D0; }
+
+/* Ghost */
+.btn-ghost {
+    -fx-background-color: transparent;
+    -fx-text-fill: -bidnow-primary;
+    -fx-border-color: transparent;
+}
+.btn-ghost:hover { -fx-background-color: -bidnow-primary-light; }
+
+/* ---------- Text fields ---------- */
+.text-field, .password-field {
+    -fx-background-color: -bidnow-field;
+    -fx-text-fill: -bidnow-text;
+    -fx-prompt-text-fill: -bidnow-muted;
+    -fx-background-radius: 8px;
+    -fx-border-radius: 8px;
+    -fx-border-color: transparent;
+    -fx-border-width: 1.5px;
+    -fx-padding: 10px 14px;
+    -fx-font-size: 14px;
+}
+.text-field:focused, .password-field:focused {
+    -fx-background-color: white;
+    -fx-border-color: -bidnow-primary;
+}
+
+/* ---------- TextArea (log) ---------- */
+.text-area {
+    -fx-background-color: -bidnow-field;
+    -fx-background-radius: 8px;
+    -fx-border-radius: 8px;
+    -fx-border-color: transparent;
+}
+.text-area .content { -fx-background-color: transparent; }
+.text-area .text { -fx-fill: -bidnow-text; }
+.text-area:focused { -fx-border-color: -bidnow-primary; }
+
+/* Dark terminal-style log (auction room) */
+.log-area {
+    -fx-background-color: #1A1F2E;
+    -fx-background-radius: 8px;
+    -fx-border-radius: 8px;
+    -fx-font-family: "Consolas", "Monaco", monospace;
+    -fx-font-size: 12.5px;
+}
+.log-area .content { -fx-background-color: #1A1F2E; -fx-background-radius: 8px; }
+.log-area .text { -fx-fill: #D4D9E6; }
+
+/* ---------- ComboBox ---------- */
+.combo-box {
+    -fx-background-color: -bidnow-field;
+    -fx-background-radius: 8px;
+    -fx-border-radius: 8px;
+    -fx-border-color: transparent;
+    -fx-border-width: 1.5px;
+}
+.combo-box:focused { -fx-border-color: -bidnow-primary; }
+.combo-box .list-cell { -fx-text-fill: -bidnow-text; -fx-background-color: transparent; -fx-padding: 7px 10px; }
+.combo-box .arrow { -fx-background-color: -bidnow-muted; }
+.combo-box-popup .list-view {
+    -fx-background-color: white;
+    -fx-border-color: -bidnow-border;
+    -fx-border-width: 1px;
+    -fx-background-radius: 8px;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.15), 12, 0, 0, 4);
+}
+.combo-box-popup .list-cell:filled:hover   { -fx-background-color: -bidnow-primary-light; -fx-text-fill: -bidnow-primary; }
+.combo-box-popup .list-cell:filled:selected { -fx-background-color: -bidnow-primary; -fx-text-fill: white; }
+
+/* ---------- ListView ---------- */
+.list-view {
+    -fx-background-color: -bidnow-card;
+    -fx-background-radius: 12px;
+    -fx-border-radius: 12px;
+    -fx-border-color: -bidnow-border;
+    -fx-border-width: 1px;
+    -fx-padding: 6px;
+}
+.list-view .list-cell {
+    -fx-background-color: white;
+    -fx-text-fill: -bidnow-text;
+    -fx-background-radius: 8px;
+    -fx-padding: 12px 14px;
+    -fx-font-size: 14px;
+    -fx-border-color: transparent transparent -bidnow-divider transparent;
+    -fx-border-width: 0 0 1px 0;
+}
+.list-view .list-cell:empty { -fx-background-color: transparent; -fx-border-color: transparent; }
+.list-view .list-cell:filled:hover { -fx-background-color: -bidnow-primary-light; }
+.list-view .list-cell:filled:selected {
+    -fx-background-color: -bidnow-primary;
+    -fx-text-fill: white;
+}
+
+/* ---------- Status badges (pill) ---------- */
+.badge {
+    -fx-padding: 4px 12px;
+    -fx-background-radius: 999px;
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+    -fx-text-fill: white;
+}
+.badge-running  { -fx-background-color: -bidnow-success; }
+.badge-live     { -fx-background-color: -bidnow-error; }
+.badge-finished { -fx-background-color: #9AA0AA; }
+.badge-paid     { -fx-background-color: -bidnow-primary; }
+.badge-canceled { -fx-background-color: -bidnow-error; }
+
+.badge-bidder { -fx-background-color: -bidnow-bidder; }
+.badge-seller { -fx-background-color: -bidnow-seller; }
+.badge-admin  { -fx-background-color: -bidnow-error; }
+
+/* ---------- Semantic price / timer ---------- */
+.price-tag {
+    -fx-font-size: 30px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -bidnow-primary;
+}
+.timer-tag {
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -bidnow-warn;
+}
+.bidder-tag {
+    -fx-font-size: 14px;
+    -fx-text-fill: -bidnow-primary;
+    -fx-font-weight: bold;
+}
+
+/* ---------- Win / Lose banners ---------- */
+.banner-win {
+    -fx-background-color: -bidnow-success;
+    -fx-background-radius: 12px;
+    -fx-padding: 16px 22px;
+    -fx-effect: dropshadow(gaussian, rgba(66,183,42,0.30), 12, 0, 0, 4);
+}
+.banner-win .label { -fx-text-fill: white; }
+.banner-lose {
+    -fx-background-color: #9AA0AA;
+    -fx-background-radius: 12px;
+    -fx-padding: 16px 22px;
+}
+.banner-lose .label { -fx-text-fill: white; }
+
+/* ---------- Empty state ---------- */
+.empty-state {
+    -fx-text-fill: -bidnow-muted;
+    -fx-font-size: 15px;
+}
+
+/* ---------- TabPane (admin) ---------- */
+.tab-pane .tab-header-background { -fx-background-color: transparent; }
+.tab-pane .tab-header-area { -fx-padding: 0 0 6px 0; }
+.tab {
+    -fx-background-color: -bidnow-card;
+    -fx-background-radius: 8px 8px 0 0;
+    -fx-padding: 9px 20px;
+    -fx-border-color: -bidnow-border;
+    -fx-border-width: 1px 1px 0 1px;
+}
+.tab .tab-label { -fx-text-fill: -bidnow-muted; -fx-font-weight: bold; }
+.tab:selected { -fx-background-color: -bidnow-primary-light; }
+.tab:selected .tab-label { -fx-text-fill: -bidnow-primary; }
+.tab-pane > .tab-content-area { -fx-padding: 12px 0 0 0; }
+
+/* ---------- LineChart ---------- */
+.chart {
+    -fx-background-color: -bidnow-card;
+    -fx-background-radius: 12px;
+    -fx-border-color: -bidnow-border;
+    -fx-border-width: 1px;
+    -fx-border-radius: 12px;
+    -fx-padding: 12px;
+}
+.chart-title { -fx-text-fill: -bidnow-text; -fx-font-weight: bold; }
+.chart-legend { -fx-background-color: transparent; -fx-text-fill: -bidnow-muted; }
+.chart-plot-background { -fx-background-color: #FAFBFC; }
+.chart-vertical-grid-lines, .chart-horizontal-grid-lines { -fx-stroke: -bidnow-divider; }
+.axis { -fx-tick-label-fill: -bidnow-muted; }
+.axis-label { -fx-text-fill: -bidnow-muted; }
+.default-color0.chart-series-line { -fx-stroke: -bidnow-primary; -fx-stroke-width: 2.5px; }
+.default-color0.chart-line-symbol { -fx-background-color: -bidnow-primary, white; }
+
+/* ---------- ScrollBar ---------- */
+.scroll-bar { -fx-background-color: transparent; }
+.scroll-bar .thumb { -fx-background-color: #C4C9D1; -fx-background-radius: 8px; }
+.scroll-bar .thumb:hover { -fx-background-color: -bidnow-muted; }
+.scroll-bar .track { -fx-background-color: transparent; }
+.scroll-bar .increment-button, .scroll-bar .decrement-button { -fx-background-color: transparent; -fx-padding: 0; }
+.scroll-bar .increment-arrow, .scroll-bar .decrement-arrow { -fx-shape: " "; -fx-padding: 0; }
+
+/* ---------- Navbar / top bar ---------- */
+.navbar {
+    -fx-background-color: -bidnow-card;
+    -fx-padding: 10px 22px;
+    -fx-alignment: center-left;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.10), 8, 0, 0, 2);
+}
+.nav-logo {
+    -fx-text-fill: -bidnow-primary;
+    -fx-font-size: 22px;
+    -fx-font-weight: bold;
+}
+.user-name { -fx-font-weight: bold; -fx-text-fill: -bidnow-text; }
+
+/* avatar circle */
+.avatar {
+    -fx-background-color: -bidnow-primary-light;
+    -fx-text-fill: -bidnow-primary;
+    -fx-font-weight: bold;
+    -fx-background-radius: 999px;
+    -fx-min-width: 38px; -fx-min-height: 38px;
+    -fx-max-width: 38px; -fx-max-height: 38px;
+    -fx-alignment: center;
+}
+.avatar-seller { -fx-background-color: #FFE082; -fx-text-fill: #BF360C; }
+
+/* ---------- Split-hero (login / register) ---------- */
+.hero-panel {
+    -fx-background-color: linear-gradient(to bottom right, #1877F2, #0095F6);
+    -fx-padding: 48px;
+}
+.hero-panel-bidder { -fx-background-color: linear-gradient(to bottom right, #9B51E0, #1877F2); }
+.hero-panel-seller { -fx-background-color: linear-gradient(to bottom right, #FF9800, #FA383E); }
+.hero-panel .label { -fx-text-fill: white; }
+.hero-title { -fx-font-size: 46px; -fx-font-weight: bold; -fx-text-fill: white; }
+.hero-lead  { -fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: white; }
+.hero-sub   { -fx-font-size: 14px; -fx-text-fill: white; -fx-opacity: 0.92; }
+.hero-feat  { -fx-font-size: 13px; -fx-text-fill: white; -fx-opacity: 0.95; }
+
+/* form side panel (no shadow, plain) */
+.panel { -fx-background-color: -bidnow-bg; }
+
+/* ---------- Product image placeholder ---------- */
+.pic {
+    -fx-background-radius: 12px;
+    -fx-alignment: center;
+    -fx-min-height: 200px;
+}
+.pic-ele { -fx-background-color: linear-gradient(to bottom right, #1877F2, #0095F6); -fx-background-radius: 12px; }
+.pic-art { -fx-background-color: linear-gradient(to bottom right, #9B51E0, #FA383E); -fx-background-radius: 12px; }
+.pic-glyph { -fx-font-size: 72px; -fx-text-fill: white; -fx-font-weight: bold; }
+
+/* ---------- Receipt ---------- */
+.receipt-check {
+    -fx-background-color: -bidnow-success;
+    -fx-text-fill: white;
+    -fx-font-size: 36px;
+    -fx-font-weight: bold;
+    -fx-background-radius: 999px;
+    -fx-min-width: 72px; -fx-min-height: 72px;
+    -fx-max-width: 72px; -fx-max-height: 72px;
+    -fx-alignment: center;
+}
+.receipt-row {
+    -fx-border-color: transparent transparent -bidnow-border transparent;
+    -fx-border-width: 0 0 1px 0;
+    -fx-padding: 8px 0;
+}
+.receipt-total { -fx-font-size: 16px; -fx-font-weight: bold; }
+
+/* ---------- Misc helpers ---------- */
+.divider { -fx-background-color: -bidnow-border; -fx-min-height: 1px; -fx-max-height: 1px; }
+.caption { -fx-text-fill: -bidnow-muted; -fx-font-size: 12px; }
+.card-selected { -fx-border-color: -bidnow-primary; -fx-border-width: 2px; -fx-background-color: #F5FAFF; }
+
+/* ---------- Dashboard shell (navbar / sidebar / feed / rail) ---------- */
+.feed-bg { -fx-background-color: -bidnow-bg; }
+.search-pill {
+    -fx-background-color: -bidnow-field;
+    -fx-background-radius: 999px;
+    -fx-border-radius: 999px;
+    -fx-border-color: transparent;
+    -fx-padding: 8px 16px;
+}
+.sidebar {
+    -fx-background-color: -bidnow-card;
+    -fx-padding: 14px 10px;
+    -fx-border-color: transparent -bidnow-border transparent transparent;
+    -fx-border-width: 0 1px 0 0;
+}
+.right-rail {
+    -fx-background-color: -bidnow-card;
+    -fx-padding: 18px;
+    -fx-border-color: transparent transparent transparent -bidnow-border;
+    -fx-border-width: 0 0 0 1px;
+}
+.nav-item {
+    -fx-background-radius: 8px;
+    -fx-padding: 10px 14px;
+    -fx-font-size: 13px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -bidnow-text;
+    -fx-cursor: hand;
+    -fx-background-color: transparent;
+    -fx-alignment: center-left;
+    -fx-max-width: Infinity;
+}
+.nav-item:hover { -fx-background-color: -bidnow-bg; }
+.nav-item-active { -fx-background-color: -bidnow-primary-light; -fx-text-fill: -bidnow-primary; }
+
+/* stat tiles */
+.stat-card {
+    -fx-background-color: -bidnow-card;
+    -fx-background-radius: 10px;
+    -fx-border-color: -bidnow-border;
+    -fx-border-width: 1px;
+    -fx-border-radius: 10px;
+    -fx-padding: 12px;
+    -fx-alignment: center;
+}
+.stat-num { -fx-font-size: 22px; -fx-font-weight: bold; }
+
+/* ---------- Wizard ---------- */
+.wizard-shell { -fx-background-color: -bidnow-bg; -fx-padding: 24px; }
+.wizard-step {
+    -fx-background-color: -bidnow-card;
+    -fx-background-radius: 10px;
+    -fx-border-color: -bidnow-border;
+    -fx-border-width: 1px;
+    -fx-border-radius: 10px;
+    -fx-padding: 14px;
+}
+.wizard-step-active { -fx-background-color: -bidnow-primary; }
+.wizard-step-active .label { -fx-text-fill: white; }
+.wizard-step-done { -fx-background-color: #EAF7E6; -fx-border-color: #C8E6C9; }
+.step-num {
+    -fx-background-color: -bidnow-bg;
+    -fx-text-fill: -bidnow-muted;
+    -fx-font-weight: bold;
+    -fx-background-radius: 999px;
+    -fx-min-width: 30px; -fx-min-height: 30px;
+    -fx-max-width: 30px; -fx-max-height: 30px;
+    -fx-alignment: center;
+}
+.wizard-step-active .step-num { -fx-background-color: white; -fx-text-fill: -bidnow-primary; }
+.wizard-step-done .step-num { -fx-background-color: -bidnow-success; -fx-text-fill: white; }
+
+/* type picker cards */
+.type-card {
+    -fx-background-color: -bidnow-card;
+    -fx-background-radius: 14px;
+    -fx-border-color: transparent;
+    -fx-border-width: 3px;
+    -fx-border-radius: 14px;
+    -fx-padding: 24px;
+    -fx-cursor: hand;
+    -fx-alignment: center;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.06), 12, 0, 0, 4);
+}
+.type-card:hover { -fx-border-color: -bidnow-border; }
+.type-card-selected { -fx-border-color: -bidnow-primary; -fx-background-color: -bidnow-primary-light; }
+.type-glyph {
+    -fx-background-radius: 999px;
+    -fx-min-width: 72px; -fx-min-height: 72px;
+    -fx-max-width: 72px; -fx-max-height: 72px;
+    -fx-alignment: center;
+    -fx-font-size: 36px;
+    -fx-text-fill: white;
+}
+.review-block {
+    -fx-background-color: -bidnow-card;
+    -fx-background-radius: 12px;
+    -fx-border-color: -bidnow-border;
+    -fx-border-width: 1px;
+    -fx-border-radius: 12px;
+    -fx-padding: 18px;
+}
+.review-row {
+    -fx-border-color: transparent transparent -bidnow-divider transparent;
+    -fx-border-width: 0 0 1px 0;
+    -fx-padding: 6px 0;
+}
+
+/* ---------- Lobby (Sảnh chờ) — lưới thẻ phiên đấu giá ---------- */
+.lobby-scroll {
+    -fx-background-color: transparent;
+    -fx-background: transparent;
+    -fx-border-color: transparent;
+    -fx-padding: 0;
+}
+.lobby-scroll > .viewport { -fx-background-color: transparent; }
+
+.auction-card {
+    -fx-background-color: -bidnow-card;
+    -fx-background-radius: 12px;
+    -fx-border-radius: 12px;
+    -fx-border-color: -bidnow-border;
+    -fx-border-width: 1px;
+    -fx-cursor: hand;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.08), 12, 0, 0, 4);
+}
+.auction-card:hover {
+    -fx-border-color: -bidnow-primary;
+    -fx-effect: dropshadow(gaussian, rgba(24,119,242,0.20), 18, 0, 0, 6);
+}
+
+/* Vùng ảnh trên cùng của thẻ — bo góc trên, đè lên .pic-ele/.pic-art */
+.card-img {
+    -fx-min-height: 108px;
+    -fx-pref-height: 108px;
+    -fx-background-radius: 12 12 0 0;
+}
+.pic-generic { -fx-background-color: linear-gradient(to bottom right, #888, #aaa); -fx-background-radius: 12 12 0 0; }
+.card-icon { -fx-font-size: 40px; -fx-text-fill: white; }
+.card-title { -fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: -bidnow-text; }
+.price-sm { -fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: -bidnow-primary; }
+.timer-sm { -fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: -bidnow-warn; }
+.badge-cat { -fx-background-color: rgba(0,0,0,0.55); }
+.inv-card-selected {
+    -fx-border-color: -bidnow-primary;
+    -fx-border-width: 2px;
+    -fx-effect: dropshadow(gaussian, rgba(24,119,242,0.28), 18, 0, 0, 6);
+}
+
+/* ---------- Dialog (Alerts) ---------- */
+.dialog-pane { -fx-background-color: -bidnow-card; }
+.dialog-pane .label { -fx-text-fill: -bidnow-text; }
+.dialog-pane .header-panel { -fx-background-color: -bidnow-primary-light; }
+.dialog-pane .header-panel .label { -fx-text-fill: -bidnow-primary; -fx-font-weight: bold; }
+.dialog-pane .button { -fx-background-color: -bidnow-primary; -fx-text-fill: white; }

@@ -3,29 +3,79 @@
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.GridPane?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.ListView?>
 <?import javafx.scene.control.Button?>
 <?import javafx.geometry.Insets?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.layout.FlowPane?>
 
-<VBox spacing="15.0" alignment="TOP_CENTER" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
-      fx:controller="com.auction.client.controllers.DashboardController">
+<VBox xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.auction.client.controllers.LobbyDashboardController">
 
-    <padding><Insets top="20" right="20" bottom="20" left="20"/></padding>
-
-    <HBox alignment="CENTER_LEFT" spacing="20">
-        <Label fx:id="welcomeLabel" text="Sảnh Chờ Đấu Giá" style="-fx-font-size: 18px; -fx-font-weight: bold;"/>
-        <Region HBox.hgrow="ALWAYS" />
-        <Button text="Đăng xuất" onAction="#handleLogout" style="-fx-cursor: hand; -fx-base: #f44336; -fx-text-fill: white;"/>
+    <!-- Navbar -->
+    <HBox styleClass="navbar" alignment="CENTER_LEFT" spacing="14">
+        <Label text="BidNow" styleClass="nav-logo"/>
+        <Region HBox.hgrow="ALWAYS"/>
+        <Button fx:id="adminPanelBtn" text="Bảng Quản Trị" onAction="#handleGoToAdminPanel" styleClass="btn-danger" visible="false" managed="false"/>
+        <Button fx:id="wizardBtn" text="+ Mở phiên mới" onAction="#handleGoToWizard" styleClass="btn-primary"/>
+        <Button fx:id="createAuctionBtn" text="📦 Quản Lý Kho" onAction="#handleGoToManageProducts" styleClass="btn-seller"/>
+        <Label fx:id="welcomeLabel" text="bob" styleClass="user-name"/>
+        <Button text="Đăng xuất" onAction="#handleLogout" styleClass="btn-ghost"/>
     </HBox>
 
-    <ListView fx:id="auctionListView" VBox.vgrow="ALWAYS" style="-fx-font-size: 14px;"/>
+    <!-- Body: sidebar | feed | rail -->
+    <HBox VBox.vgrow="ALWAYS">
+        <!-- Sidebar -->
+        <VBox styleClass="sidebar" spacing="3" prefWidth="190" minWidth="170">
+            <Label fx:id="navLobby" text="🏠 Sảnh chờ" styleClass="nav-item, nav-item-active" onMouseClicked="#filterLobby"/>
+            <Label fx:id="navLive" text="🟢 Đang LIVE" styleClass="nav-item" onMouseClicked="#filterLive"/>
+            <Label fx:id="navFinished" text="🏁 Đã kết thúc" styleClass="nav-item" onMouseClicked="#filterFinished"/>
+            <Label fx:id="navPaid" text="💳 Đã thanh toán" styleClass="nav-item" onMouseClicked="#filterPaid"/>
+            <Region prefHeight="10"/>
+            <Label text="LOẠI SẢN PHẨM" styleClass="caption">
+                <padding><Insets left="14" top="6" bottom="2"/></padding>
+            </Label>
+            <Label fx:id="navElectronics" text="📱 ELECTRONICS" styleClass="nav-item" onMouseClicked="#filterElectronics"/>
+            <Label fx:id="navArt" text="🎨 ART" styleClass="nav-item" onMouseClicked="#filterArt"/>
+        </VBox>
 
-    <HBox spacing="15" alignment="CENTER">
-        <Button fx:id="adminPanelBtn" text="Bảng Quản Trị" onAction="#handleGoToAdminPanel" style="-fx-font-size: 14px; -fx-cursor: hand; -fx-base: #D32F2F;" visible="false" managed="false"/>
+        <!-- Feed -->
+        <VBox styleClass="feed-bg" spacing="12" HBox.hgrow="ALWAYS">
+            <padding><Insets top="18" right="22" bottom="18" left="22"/></padding>
+            <HBox alignment="CENTER_LEFT" spacing="10">
+                <Label text="Phiên đấu giá" styleClass="text-subtitle"/>
+                <Label fx:id="filterChip" styleClass="badge, badge-cat" visible="false" managed="false"/>
+                <Region HBox.hgrow="ALWAYS"/>
+                <Button text="Tham Gia Phiên" onAction="#handleJoinAuction" styleClass="btn-success"/>
+            </HBox>
+            <Label text="Chọn một phiên rồi bấm Tham Gia Phiên để vào phòng đấu giá realtime." styleClass="text-muted"/>
 
-        <Button fx:id="createAuctionBtn" text="Quản Lý Kho Sản Phẩm" onAction="#handleGoToManageProducts" style="-fx-font-size: 14px; -fx-cursor: hand; -fx-base: #2196F3;"/>
-        <Button text="Tham Gia Phiên" onAction="#handleJoinAuction" style="-fx-font-size: 14px; -fx-cursor: hand; -fx-base: #4CAF50;"/>
+            <!-- Sảnh chờ: lưới thẻ sản phẩm (mặc định hiển thị) -->
+            <ScrollPane fx:id="lobbyScroll" styleClass="lobby-scroll" fitToWidth="true" VBox.vgrow="ALWAYS">
+                <FlowPane fx:id="lobbyGrid" hgap="14" vgap="14">
+                    <padding><Insets top="4" right="4" bottom="4" left="4"/></padding>
+                </FlowPane>
+            </ScrollPane>
+
+            <!-- Đang LIVE / Đã kết thúc / Đã thanh toán: danh sách như cũ -->
+            <ListView fx:id="auctionListView" VBox.vgrow="ALWAYS" visible="false" managed="false"/>
+        </VBox>
+
+        <!-- Right rail -->
+        <VBox styleClass="right-rail" spacing="12" prefWidth="230" minWidth="200">
+            <Label text="📊 Tổng quan" styleClass="text-section"/>
+            <GridPane hgap="10" vgap="10">
+                <VBox styleClass="stat-card" GridPane.columnIndex="0" GridPane.rowIndex="0">
+                    <Label fx:id="statShown" text="—" styleClass="stat-num" style="-fx-text-fill: -bidnow-primary;"/>
+                    <Label text="Phiên hiển thị" styleClass="caption"/>
+                </VBox>
+                <VBox styleClass="stat-card" GridPane.columnIndex="1" GridPane.rowIndex="0">
+                    <Label fx:id="statLive" text="0" styleClass="stat-num" style="-fx-text-fill: -bidnow-error;"/>
+                    <Label text="Đang LIVE" styleClass="caption"/>
+                </VBox>
+            </GridPane>
+        </VBox>
     </HBox>
-
 </VBox>

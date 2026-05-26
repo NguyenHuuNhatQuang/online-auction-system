@@ -14,7 +14,7 @@ import java.util.List;
 
 public class ProductManagementController {
 
-  @FXML private ListView<String> itemListView;
+  @FXML protected ListView<String> itemListView;
   @FXML private TextField nameField;
   @FXML private TextField descField;
   @FXML private ComboBox<String> typeComboBox;
@@ -53,6 +53,7 @@ public class ProductManagementController {
             JsonNode arrayNode = objectMapper.readTree(message.getPayload());
             itemListView.getItems().clear();
             itemIds.clear();
+            List<InvItem> inventory = new ArrayList<>();
 
             for (JsonNode node : arrayNode) {
               String id = node.get("id").asText();
@@ -61,15 +62,21 @@ public class ProductManagementController {
               String desc = node.get("desc").asText();
 
               String extra = "";
+              String attr = "";
               if (node.has("warrantyMonths")) {
                 extra = " [Bảo hành: " + node.get("warrantyMonths").asText() + " tháng]";
+                attr = "Bảo hành " + node.get("warrantyMonths").asText() + " tháng";
               } else if (node.has("artist")) {
                 extra = " [Họa sĩ: " + node.get("artist").asText() + "]";
+                attr = "Tác giả: " + node.get("artist").asText();
               }
 
               itemListView.getItems().add(String.format("(%s) %s - %s %s", type, name, desc, extra));
               itemIds.add(id);
+              inventory.add(new InvItem(id, name, type, desc, attr));
             }
+            // Điểm mở rộng: lớp con có thể override để vẽ kho dạng lưới thẻ.
+            renderInventory(inventory);
           } else if ("AUCTION_CREATED".equals(message.getAction())) {
             showAlert(Alert.AlertType.INFORMATION, "Thành công", "Sản phẩm đã được mở phiên đấu giá realtime công cộng công khai!");
             startPriceField.clear();
@@ -198,6 +205,34 @@ public class ProductManagementController {
   @FXML
   private void handleBack() {
     SceneManager.getInstance().switchScene("/fxml/dashboard.fxml", "Sảnh Chờ - " + currentUser);
+  }
+
+  /**
+   * Một dòng sản phẩm trong kho (dữ liệu thuần để hiển thị).
+   * Thứ tự của danh sách trùng khớp với chỉ số trong {@code itemListView}/{@code itemIds}.
+   */
+  protected static class InvItem {
+    public final String id;
+    public final String name;
+    public final String type;   // ELECTRONICS | ART
+    public final String desc;
+    public final String attr;   // "Bảo hành 12 tháng" / "Tác giả: ..." (có thể rỗng)
+
+    InvItem(String id, String name, String type, String desc, String attr) {
+      this.id = id;
+      this.name = name;
+      this.type = type;
+      this.desc = desc;
+      this.attr = attr;
+    }
+  }
+
+  /**
+   * Điểm mở rộng: được gọi mỗi khi kho được làm tươi. Mặc định không làm gì
+   * (giữ nguyên hành vi ListView cũ). Lớp con override để vẽ lưới thẻ.
+   */
+  protected void renderInventory(List<InvItem> items) {
+    // no-op
   }
 
   private void showAlert(Alert.AlertType type, String title, String message) {

@@ -42,24 +42,18 @@ public class LoginController {
 
   @FXML
   private void handleRegisterBidder() {
-    sendRegisterRequest("BIDDER");
+    openRegister("BIDDER");
   }
 
   @FXML
   private void handleRegisterSeller() {
-    sendRegisterRequest("SELLER");
+    openRegister("SELLER");
   }
 
-  private void sendRegisterRequest(String role) {
-    String username = usernameField.getText().trim();
-    String password = passwordField.getText().trim();
-    if (username.isEmpty() || password.isEmpty()) {
-      showAlert("Lỗi", "Vui lòng nhập đầy đủ tên và mật khẩu để đăng ký!");
-      return;
-    }
-    String payload = String.format("{\"username\":\"%s\", \"password\":\"%s\", \"role\":\"%s\"}", username, password, role);
-    String request = String.format("{\"action\":\"REGISTER\", \"payload\":%s}", escapeJson(payload));
-    SceneManager.getInstance().getNetworkClient().sendMessage(request);
+  /** Chuyển sang màn Đăng ký riêng, mang theo vai trò đã chọn. */
+  private void openRegister(String role) {
+    SceneManager.getInstance().setRegisterRole(role);
+    SceneManager.getInstance().switchScene("/fxml/register.fxml", "Đăng ký tài khoản " + role);
   }
 
   private void handleServerResponse(String jsonMessage) {

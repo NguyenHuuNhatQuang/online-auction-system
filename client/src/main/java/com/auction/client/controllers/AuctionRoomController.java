@@ -84,7 +84,7 @@ public class AuctionRoomController {
                 if ("Không có ai".equals(winner)) {
                   logArea.appendText("Sản phẩm không có ai mua.\n");
                 } else {
-                  logArea.appendText("Người chiến thắng: " + winner + " với giá $" + finalPrice + "\n");
+                  logArea.appendText("Người chiến thắng: " + winner + String.format(" với giá %,.0f VND%n", finalPrice));
 
                   if (currentUser.equals(winner)) {
                     payButton.setVisible(true);
@@ -111,7 +111,7 @@ public class AuctionRoomController {
               JsonNode stateNode = objectMapper.readTree(message.getPayload());
               itemNameLabel.setText("Sản phẩm: " + stateNode.get("itemName").asText());
               itemDescLabel.setText("Mô tả: " + stateNode.get("itemDesc").asText());
-              currentPriceLabel.setText(String.format("Giá hiện tại: $%.2f", stateNode.get("currentPrice").asDouble()));
+              currentPriceLabel.setText(String.format("Giá hiện tại: %,.0f VND", stateNode.get("currentPrice").asDouble()));
               highestBidderLabel.setText("Người giữ giá: " + stateNode.get("highestBidder").asText());
 
               // Xóa trắng log cũ để chuẩn bị in lịch sử mới
@@ -128,7 +128,7 @@ public class AuctionRoomController {
                   String bidder = txNode.get("bidder").asText();
                   double amount = txNode.get("amount").asDouble();
 
-                  logArea.appendText(">> Lịch sử: " + bidder + " đã đặt giá $" + amount + "\n");
+                  logArea.appendText(">> Lịch sử: " + bidder + String.format(" đã đặt giá %,.0f VND%n", amount));
 
                   // Chèn điểm vào đồ thị
                   bidSeries.getData().add(new XYChart.Data<>(bidder + " (#" + bidStepCount + ")", amount));
@@ -153,9 +153,9 @@ public class AuctionRoomController {
                 double newPrice = payloadNode.get("newPrice").asDouble();
                 String bidder = payloadNode.get("highestBidder").asText();
 
-                currentPriceLabel.setText(String.format("Giá cao nhất: $%.2f", newPrice));
+                currentPriceLabel.setText(String.format("Giá cao nhất: %,.0f VND", newPrice));
                 highestBidderLabel.setText("Người giữ giá: " + bidder); // Cập nhật người giữ giá
-                logArea.appendText(">> " + bidder + " vừa nâng giá lên $" + newPrice + "\n");
+                logArea.appendText(">> " + bidder + String.format(" vừa nâng giá lên %,.0f VND%n", newPrice));
 
                 // THÊM BIỂU ĐỒ: Vẽ thêm điểm vút lên ngay lập tức
                 bidSeries.getData().add(new XYChart.Data<>(bidder + " (#" + bidStepCount + ")", newPrice));

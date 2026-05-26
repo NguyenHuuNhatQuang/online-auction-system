@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.control.PasswordField?>
+<?import javafx.scene.control.Button?>
+<?import javafx.geometry.Insets?>
+
+<HBox xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.auction.client.controllers.RegisterController">
+
+    <!-- Hero (left) — màu sẽ đổi theo vai trò trong controller -->
+    <VBox fx:id="heroPanel" styleClass="hero-panel" alignment="CENTER_LEFT" spacing="14" HBox.hgrow="ALWAYS" prefWidth="430">
+        <Label fx:id="heroTitle" text="Bidder" styleClass="hero-title"/>
+        <Label fx:id="heroLead" text="Săn món đồ độc, đặt giá tự do." styleClass="hero-lead"/>
+        <Label fx:id="heroSub" text="Tham gia mọi phiên đang chạy, đặt giá realtime và thanh toán khi thắng." styleClass="hero-sub" wrapText="true" maxWidth="320"/>
+        <VBox spacing="10">
+            <padding><Insets top="14"/></padding>
+            <Label text="🎯  Tham gia phiên không giới hạn" styleClass="hero-feat"/>
+            <Label text="📊  Theo dõi giá realtime mọi phiên" styleClass="hero-feat"/>
+            <Label text="💰  Quản lý kho &amp; mở phiên dễ dàng" styleClass="hero-feat"/>
+        </VBox>
+    </VBox>
+
+    <!-- Form (right) -->
+    <VBox styleClass="panel" alignment="CENTER" HBox.hgrow="ALWAYS">
+        <VBox alignment="CENTER_LEFT" spacing="14" maxWidth="380" styleClass="card">
+            <padding><Insets top="32" right="32" bottom="32" left="32"/></padding>
+
+            <HBox spacing="10" alignment="CENTER_LEFT">
+                <Label fx:id="formTitle" text="Tạo tài khoản" styleClass="text-title"/>
+                <Label fx:id="roleBadge" text="BIDDER" styleClass="badge, badge-bidder"/>
+            </HBox>
+            <Label text="Đăng ký miễn phí" styleClass="text-muted"/>
+
+            <VBox spacing="6" fillWidth="true">
+                <Label text="TÊN ĐĂNG NHẬP" styleClass="text-section"/>
+                <TextField fx:id="usernameField"/>
+                <Label text="MẬT KHẨU" styleClass="text-section">
+                    <VBox.margin><Insets top="8"/></VBox.margin>
+                </Label>
+                <PasswordField fx:id="passwordField"/>
+            </VBox>
+
+            <Button fx:id="submitButton" text="Xác nhận đăng ký" onAction="#handleRegister" styleClass="btn-bidder" maxWidth="Infinity"/>
+            <Button text="← Quay lại Đăng nhập" onAction="#handleBackToLogin" styleClass="btn-ghost" maxWidth="Infinity"/>
+        </VBox>
+    </VBox>
+</HBox>
