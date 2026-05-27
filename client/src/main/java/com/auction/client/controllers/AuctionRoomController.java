@@ -12,6 +12,8 @@ import javafx.scene.control.Label;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.scene.control.Button;
+import javafx.scene.chart.LineChart;
+import javafx.scene.chart.XYChart;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.util.Duration;
@@ -36,12 +38,20 @@ public class AuctionRoomController {
   private final ObjectMapper objectMapper = new ObjectMapper();
   private Timeline countdownTimeline;
   private LocalDateTime endTime;
+  @FXML private LineChart<String, Number> bidChart;
+  private XYChart.Series<String, Number> bidSeries;
+  private int bidStepCount = 1; // Đếm số thứ tự lượt đặt để trục X không bị trùng lặp
 
   @FXML
   public void initialize() {
     this.currentUser = SceneManager.getInstance().getCurrentUser();
     this.auctionId = SceneManager.getInstance().getCurrentAuctionId();
     this.networkClient = SceneManager.getInstance().getNetworkClient();
+
+    // THÊM BIỂU ĐỒ: Khởi tạo Series chứa dữ liệu đường thẳng
+    bidSeries = new XYChart.Series<>();
+    bidSeries.setName("Mức giá đặt");
+    bidChart.getData().add(bidSeries);
 
     roomTitleLabel.setText("Phiên Đấu Giá: " + auctionId);
     logArea.appendText("Bạn đã vào phòng. Đang đồng bộ dữ liệu...\n");
@@ -108,13 +118,21 @@ public class AuctionRoomController {
               logArea.clear();
               logArea.appendText("=== CHÀO MỪNG ĐẾN PHÒNG ĐẤU GIÁ ===\n");
 
-              // Đọc mảng lịch sử (nếu có) và in ra màn hình
+              // THÊM BIỂU ĐỒ: Vẽ lại toàn bộ lịch sử nếu có
+              bidSeries.getData().clear();
+              bidStepCount = 1;
+
               if (stateNode.has("bidHistory")) {
                 JsonNode historyArray = stateNode.get("bidHistory");
                 for (JsonNode txNode : historyArray) {
                   String bidder = txNode.get("bidder").asText();
                   double amount = txNode.get("amount").asDouble();
+
                   logArea.appendText(">> Lịch sử: " + bidder + " đã đặt giá $" + amount + "\n");
+
+                  // Chèn điểm vào đồ thị
+                  bidSeries.getData().add(new XYChart.Data<>(bidder + " (#" + bidStepCount + ")", amount));
+                  bidStepCount++;
                 }
               }
 
@@ -138,6 +156,10 @@ public class AuctionRoomController {
                 currentPriceLabel.setText(String.format("Giá cao nhất: $%.2f", newPrice));
                 highestBidderLabel.setText("Người giữ giá: " + bidder); // Cập nhật người giữ giá
                 logArea.appendText(">> " + bidder + " vừa nâng giá lên $" + newPrice + "\n");
+
+                // THÊM BIỂU ĐỒ: Vẽ thêm điểm vút lên ngay lập tức
+                bidSeries.getData().add(new XYChart.Data<>(bidder + " (#" + bidStepCount + ")", newPrice));
+                bidStepCount++;
               }
               break;
             }

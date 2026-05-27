@@ -42,7 +42,7 @@ public class SceneManager {
     try {
       FXMLLoader loader = new FXMLLoader(getClass().getResource(fxmlPath));
       Parent root = loader.load();
-      Scene scene = new Scene(root, 600, 400); // Cố định kích thước cửa sổ tối giản
+      Scene scene = new Scene(root, 960, 720);
       primaryStage.setTitle(title);
       primaryStage.setScene(scene);
       primaryStage.show();
