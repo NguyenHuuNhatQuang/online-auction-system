@@ -35,10 +35,25 @@
         </Tab>
 
         <Tab text="Quản lý Sản phẩm">
-            <VBox alignment="CENTER"><Label text="Tính năng đang hoàn thiện..."/></VBox>
+            <VBox spacing="10">
+                <padding><Insets top="10" right="10" bottom="10" left="10"/></padding>
+                <ListView fx:id="allItemListView" VBox.vgrow="ALWAYS" style="-fx-font-size: 14px;"/>
+                <HBox spacing="10" alignment="CENTER">
+                    <Button text="Xóa Sản Phẩm Này (Vi phạm)" onAction="#handleAdminDeleteItem" style="-fx-base: #f44336; -fx-cursor: hand; -fx-text-fill: white;"/>
+                    <Button text="Làm mới danh sách" onAction="#refreshItems" style="-fx-cursor: hand;"/>
+                </HBox>
+            </VBox>
         </Tab>
+
         <Tab text="Quản lý Phiên đấu giá">
-            <VBox alignment="CENTER"><Label text="Tính năng đang hoàn thiện..."/></VBox>
+            <VBox spacing="10">
+                <padding><Insets top="10" right="10" bottom="10" left="10"/></padding>
+                <ListView fx:id="allAuctionListView" VBox.vgrow="ALWAYS" style="-fx-font-size: 14px;"/>
+                <HBox spacing="10" alignment="CENTER">
+                    <Button text="Dừng Khẩn Cấp (Force Stop)" onAction="#handleForceStopAuction" style="-fx-base: #FF9800; -fx-cursor: hand;"/>
+                    <Button text="Làm mới danh sách" onAction="#refreshAuctions" style="-fx-cursor: hand;"/>
+                </HBox>
+            </VBox>
         </Tab>
     </TabPane>
 </VBox>

@@ -107,4 +107,33 @@ public class ItemDAO {
     }
     return list;
   }
+
+  public Collection<Item> getAllItems() {
+    Collection<Item> list = new ArrayList<>();
+    String sql = "SELECT id, name, description, type, warranty_months, artist, seller_id FROM items";
+    try (Connection conn = DatabaseConnection.getConnection();
+         PreparedStatement pstmt = conn.prepareStatement(sql);
+         ResultSet rs = pstmt.executeQuery()) {
+      while (rs.next()) {
+        String id = rs.getString("id");
+        String name = rs.getString("name");
+        String desc = rs.getString("description");
+        String type = rs.getString("type");
+        String sellerId = rs.getString("seller_id"); // Lấy thêm thông tin chủ sở hữu
+
+        Item item;
+        if ("ELECTRONICS".equalsIgnoreCase(type)) {
+          item = new Electronics(id, name, desc, rs.getInt("warranty_months"));
+        } else {
+          item = new Art(id, name, desc, rs.getString("artist"));
+        }
+        // Gắn tạm tên người bán vào description để Admin dễ nhìn
+        item.setDescription(desc + " (Owner: " + sellerId + ")");
+        list.add(item);
+      }
+    } catch (SQLException e) {
+      System.err.println("[ItemDAO] Lỗi lấy toàn bộ kho sản phẩm: " + e.getMessage());
+    }
+    return list;
+  }
 }

@@ -62,4 +62,8 @@ public class ItemManager {
   public Collection<Item> getItemsBySeller(String sellerId) {
     return itemDAO.getItemsBySeller(sellerId);
   }
+
+  public Collection<Item> getAllItems() {
+    return itemDAO.getAllItems();
+  }
 }

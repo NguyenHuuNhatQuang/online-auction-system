@@ -97,6 +97,15 @@ public class MessageRouter {
         case "ADMIN_CHANGE_ROLE":
           handleAdminChangeRole(message.getPayload(), client);
           break;
+        case "ADMIN_GET_ALL_ITEMS":
+          handleAdminGetAllItems(client);
+          break;
+        case "ADMIN_DELETE_ITEM":
+          handleAdminDeleteItem(message.getPayload(), client);
+          break;
+        case "ADMIN_FORCE_STOP_AUCTION":
+          handleAdminForceStopAuction(message.getPayload(), client);
+          break;
         default:
           sendError(client, "Hành động không được hệ thống hỗ trợ: " + message.getAction());
           break;
@@ -458,6 +467,52 @@ public class MessageRouter {
       });
     } catch (Exception e) {
       sendError(client, "Lỗi phân tích yêu cầu đổi quyền.");
+    }
+  }
+
+  private void handleAdminGetAllItems(ClientHandler client) {
+    try {
+      Collection<Item> allItems = com.auction.server.services.ItemManager.getInstance().getAllItems();
+      StringBuilder payload = new StringBuilder("[");
+      int index = 0;
+      for (Item item : allItems) {
+        payload.append(String.format("{\"id\":\"%s\", \"name\":\"%s\", \"desc\":\"%s\", \"type\":\"%s\"}",
+            item.getId(), item.getName(), item.getDescription(), item.getItemType()));
+        if (++index < allItems.size()) payload.append(",");
+      }
+      payload.append("]");
+      client.sendMessage(String.format("{\"action\":\"ADMIN_ALL_ITEMS_LIST\", \"payload\":%s}", escapeJson(payload.toString())));
+    } catch (Exception e) {
+      sendError(client, "Lỗi lấy danh sách toàn bộ sản phẩm.");
+    }
+  }
+
+  private void handleAdminDeleteItem(String payloadJson, ClientHandler client) {
+    try {
+      String itemId = objectMapper.readTree(payloadJson).get("itemId").asText();
+      com.auction.server.services.ItemManager.getInstance().deleteItem(itemId);
+      handleAdminGetAllItems(client); // Refresh lại danh sách cho Admin
+    } catch (Exception e) {
+      sendError(client, "Lỗi xóa sản phẩm.");
+    }
+  }
+
+  private void handleAdminForceStopAuction(String payloadJson, ClientHandler client) {
+    try {
+      String auctionId = objectMapper.readTree(payloadJson).get("auctionId").asText();
+      Auction auction = AuctionManager.getInstance().getAuction(auctionId);
+      if (auction != null && "RUNNING".equals(auction.getStatus())) {
+        AuctionManager.getInstance().updateAuctionStatus(auctionId, "CANCELED"); // Hủy bỏ phiên
+
+        // Phát loa cho toàn hệ thống biết phiên này bị Admin đóng cửa
+        String broadcastPayload = String.format("{\"auctionId\":\"%s\", \"winner\":\"BỊ HỦY BỞI ADMIN\", \"finalPrice\":0.0}", auctionId);
+        server.broadcastMessage(objectMapper.writeValueAsString(new SocketMessage("AUCTION_FINISHED", broadcastPayload)));
+
+        // Refresh lại danh sách active (mượn luôn hàm cũ)
+        handleGetActiveAuctions(client);
+      }
+    } catch (Exception e) {
+      sendError(client, "Lỗi dừng phiên đấu giá.");
     }
   }
 }
