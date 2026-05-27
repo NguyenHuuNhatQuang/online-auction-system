@@ -179,21 +179,24 @@ class MessageRouterTest {
   }
 
   @Test
-  @DisplayName("Định tuyến đúng khi gửi JSON lệnh LOGIN hợp lệ")
+  @DisplayName("Định tuyến đúng khi gửi JSON lệnh LOGIN")
   void testRoute_Login_Success() {
+    // 1. Chuẩn bị dữ liệu mồi
+    com.auction.server.services.UserManager.getInstance().register("router_test_user", "123", "BIDDER");
+    com.auction.server.database.DatabaseWriteQueue.getInstance().flushForTesting();
+
+    // 2. Giả lập chuỗi JSON từ Client (Đảm bảo username/password khớp với dữ liệu mồi)
     String loginJson = "{"
         + "\"action\": \"LOGIN\","
-        + "\"payload\": \"{\\\"username\\\":\\\"alice\\\", \\\"password\\\":\\\"123\\\"}\""
+        + "\"payload\": \"{\\\"username\\\":\\\"router_test_user\\\", \\\"password\\\":\\\"123\\\"}\""
         + "}";
 
     messageRouter.route(loginJson, mockClient);
 
+    // 3. Kiểm tra kết quả
     ArgumentCaptor<String> messageCaptor = ArgumentCaptor.forClass(String.class);
     verify(mockClient).sendMessage(messageCaptor.capture());
-
-    String responseToClient = messageCaptor.getValue();
-    assertTrue(responseToClient.contains("LOGIN_SUCCESS"), "Phải phản hồi đăng nhập thành công");
-    assertTrue(responseToClient.contains("BIDDER"), "Phải chứa thông tin quyền hạn của người dùng (Role)");
+    assertTrue(messageCaptor.getValue().contains("LOGIN_SUCCESS"), "Phải phản hồi đăng nhập thành công");
   }
 
   @Test

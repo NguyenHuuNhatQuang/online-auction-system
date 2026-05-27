@@ -29,9 +29,6 @@ public class AuctionServer {
   /** Danh sách lưu trữ an toàn đa luồng chứa các kết nối Client đang trực tuyến. */
   private final Set<ClientHandler> activeClients;
 
-  /** Bộ định thời chạy ngầm tự động quét và đóng các phiên đấu giá hết hạn. */
-  private AuctionScheduler scheduler;
-
   private ServerSocket serverSocket;
 
   /**
@@ -56,8 +53,6 @@ public class AuctionServer {
 
     // Khởi tạo và kích hoạt bộ quét thời gian đấu giá tự động
     BiddingService biddingService = new BiddingService();
-    this.scheduler = new AuctionScheduler(biddingService, this);
-    this.scheduler.start();
 
     try {
       this.serverSocket = new ServerSocket(port);
@@ -120,11 +115,6 @@ public class AuctionServer {
         }
       } catch (IOException e) {
         System.err.println("Lỗi khi đóng ServerSocket: " + e.getMessage());
-      }
-
-      // 2. Hủy cấp phát tài nguyên luồng chạy ngầm (Scheduler)
-      if (scheduler != null) {
-        scheduler.stop();
       }
 
 // 3. Chủ động ngắt kết nối toàn bộ Client đang trực tuyến

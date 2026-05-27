@@ -18,34 +18,66 @@ import java.util.concurrent.TimeUnit;
  */
 public class AuctionScheduler {
 
+  private static volatile AuctionScheduler instance;
+
   // Trình quản lý luồng định kỳ (Chỉ cần 1 luồng chạy ngầm là đủ)
   private final ScheduledExecutorService scheduler;
   private final AuctionManager auctionManager;
-  private final BiddingService biddingService;
-  private final AuctionServer server;
   private final ObjectMapper objectMapper;
 
+  // Bỏ final để cấu hình động thông qua hàm init() sau khi khởi tạo Singleton
+  private BiddingService biddingService;
+  private AuctionServer server;
+  private boolean isRunning = false;
+
   /**
-   * Khởi tạo bộ định thời.
-   *
-   * @param biddingService Dịch vụ xử lý khóa và logic đấu giá.
-   * @param server         Máy chủ Socket để phát sóng thông báo.
+   * Khởi tạo bộ định thời (Private constructor để tuân thủ Pattern Singleton).
    */
-  public AuctionScheduler(BiddingService biddingService, AuctionServer server) {
+  private AuctionScheduler() {
     this.scheduler = Executors.newSingleThreadScheduledExecutor();
     this.auctionManager = AuctionManager.getInstance();
+    this.objectMapper = new ObjectMapper();
+  }
+
+  /**
+   * Lấy phiên bản duy nhất của AuctionScheduler (Thread-safe Double-Checked Locking).
+   */
+  public static AuctionScheduler getInstance() {
+    if (instance == null) {
+      synchronized (AuctionScheduler.class) {
+        if (instance == null) {
+          instance = new AuctionScheduler();
+        }
+      }
+    }
+    return instance;
+  }
+
+  /**
+   * Cấu hình các dịch vụ phụ thuộc bắt buộc cho bộ định thời.
+   * Do AuctionServer và BiddingService được quản lý tại luồng khởi động hệ thống,
+   * chúng cần được nạp vào đây trước khi gọi start().
+   */
+  public void init(BiddingService biddingService, AuctionServer server) {
     this.biddingService = biddingService;
     this.server = server;
-    this.objectMapper = new ObjectMapper();
   }
 
   /**
    * Bắt đầu tiến trình chạy ngầm. Quét hệ thống mỗi 1 giây.
    */
   public void start() {
-    System.out.println("[AuctionScheduler] Đã khởi động bộ quét thời gian ngầm.");
-    // Thực thi hàm scanExpiredAuctions() sau mỗi 1 giây (độ trễ ban đầu 1s)
-    scheduler.scheduleAtFixedRate(this::scanExpiredAuctions, 1, 1, TimeUnit.SECONDS);
+    if (biddingService == null || server == null) {
+      System.err.println("[AuctionScheduler] Lỗi nghiêm trọng: Chưa cấu hình các dịch vụ phụ thuộc bằng hàm init()!");
+      return;
+    }
+
+    if (!isRunning) {
+      System.out.println("[AuctionScheduler] Đã khởi động bộ quét thời gian ngầm.");
+      // Thực thi hàm scanExpiredAuctions() sau mỗi 1 giây (độ trễ ban đầu 1s)
+      scheduler.scheduleAtFixedRate(this::scanExpiredAuctions, 1, 1, TimeUnit.SECONDS);
+      isRunning = true;
+    }
   }
 
   /**
@@ -55,6 +87,7 @@ public class AuctionScheduler {
     if (scheduler != null && !scheduler.isShutdown()) {
       scheduler.shutdown();
       System.out.println("[AuctionScheduler] Đã tắt bộ quét thời gian ngầm.");
+      isRunning = false;
     }
   }
 
@@ -97,5 +130,16 @@ public class AuctionScheduler {
     } catch (JsonProcessingException e) {
       System.err.println("[AuctionScheduler] Lỗi tạo JSON thông báo kết thúc: " + e.getMessage());
     }
+  }
+
+  /**
+   * HÀM DÀNH RIÊNG CHO UNIT TEST.
+   * Reset lại trạng thái để các bài test chạy độc lập.
+   */
+  public void resetForTesting() {
+    this.stop(); // Dừng luồng đang chạy nếu có
+    this.biddingService = null;
+    this.server = null;
+    this.isRunning = false;
   }
 }

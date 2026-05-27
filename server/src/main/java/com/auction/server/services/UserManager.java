@@ -3,45 +3,32 @@ package com.auction.server.services;
 import com.auction.common.models.Bidder;
 import com.auction.common.models.Seller;
 import com.auction.common.models.User;
+import com.auction.server.database.DatabaseWriteQueue;
+import com.auction.server.database.UserDAO;
 
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.UUID;
 
-/**
- * Quản lý danh sách người dùng.
- * Hiện tại đang dùng dữ liệu ảo (Mock) trên RAM.
- * Sau này chỉ cần đổi ruột class này thành gọi Database (JDBC) là xong.
- */
 public class UserManager {
 
   private static volatile UserManager instance;
-  private final ConcurrentHashMap<String, User> users;
+  private final UserDAO userDAO;
 
   private UserManager() {
-    users = new ConcurrentHashMap<>();
-    // Tạo sẵn dữ liệu ảo để test (Mật khẩu chung là 123)
-    // Alice là Bidder (chỉ được mua)
-    users.put("alice", new Bidder("u1", "alice", "123"));
-    // Bob là Seller (được quyền tạo phiên đấu giá)
-    users.put("bob", new Seller("u2", "bob", "123"));
+    this.userDAO = new UserDAO();
   }
 
   public static UserManager getInstance() {
     if (instance == null) {
       synchronized (UserManager.class) {
-        if (instance == null) {
-          instance = new UserManager();
-        }
+        if (instance == null) instance = new UserManager();
       }
     }
     return instance;
   }
 
-  /**
-   * Xác thực đăng nhập.
-   * @return Đối tượng User nếu đúng tài khoản/mật khẩu, ngược lại trả về null.
-   */
   public User authenticate(String username, String password) {
-    User user = users.get(username);
+    // Đọc trực tiếp từ Database
+    User user = userDAO.getUserByUsername(username);
     if (user != null && user.getPassword().equals(password)) {
       return user;
     }
@@ -49,11 +36,25 @@ public class UserManager {
   }
 
   public User register(String username, String password, String role) {
-    if (users.containsKey(username)) return null; // Trùng tên
+    if (userDAO.getUserByUsername(username) != null) {
+      return null;
+    }
+
+    String newId = "U_" + UUID.randomUUID().toString().substring(0, 8);
     User newUser = "SELLER".equalsIgnoreCase(role)
-        ? new Seller("u" + (users.size() + 1), username, password)
-        : new Bidder("u" + (users.size() + 1), username, password);
-    users.put(username, newUser);
+        ? new Seller(newId, username, password)
+        : new Bidder(newId, username, password);
+
+    // Đẩy lệnh lưu xuống Hàng đợi Database
+    DatabaseWriteQueue.getInstance().execute(() -> {
+      try {
+        userDAO.insertUser(newUser);
+        System.out.println("[UserManager] Đã ghi User mới vào Database: " + username);
+      } catch (Exception e) {
+        System.err.println("[UserManager] Lỗi lưu User vào DB: " + e.getMessage());
+      }
+    });
+
     return newUser;
   }
 }

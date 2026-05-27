@@ -40,34 +40,47 @@ class AuctionSchedulerTest {
   private Auction testAuction;
 
   @BeforeEach
-  void setUp() {
-    // Khởi tạo Scheduler với các object giả (Mock) để không gọi mạng hay khóa luồng thật
-    scheduler = new AuctionScheduler(mockBiddingService, mockServer);
+  void setUp() throws Exception {
+    // 1. Dọn dẹp sạch sẽ Hàng đợi và Database để tránh lỗi khóa file hoặc trùng ID
+    com.auction.server.database.DatabaseWriteQueue.getInstance().flushForTesting();
+    java.nio.file.Files.deleteIfExists(java.nio.file.Paths.get("auction_system.db"));
+    com.auction.server.database.DatabaseConnection.initDatabase();
 
-    // Chuẩn bị dữ liệu trung tâm
+    // 2. Lấy Singleton instance và dọn dẹp trạng thái
+    scheduler = AuctionScheduler.getInstance();
+    scheduler.resetForTesting();
+
+    // 3. Bơm (Inject) các mock object vào
+    scheduler.init(mockBiddingService, mockServer);
+
+    // 4. Chuẩn bị dữ liệu trung tâm trên RAM
     auctionManager = AuctionManager.getInstance();
-    auctionManager.getAllAuctions().clear();
+    auctionManager.clearCacheForTesting(); // SỬA TẠI ĐÂY: Dùng hàm dọn dẹp chuẩn
 
     Item item = new Electronics("item1", "Test Item", "Desc", 12);
     Seller seller = new Seller("seller1", "seller", "pass");
 
-    // Tạo một phiên đấu giá giả
+    // Tạo một phiên đấu giá giả (Đã hết hạn)
     testAuction = new Auction("auc_test_1", item, seller, 1000.0,
         LocalDateTime.now().minusHours(2),
-        LocalDateTime.now().minusHours(1)); // Đã hết hạn
+        LocalDateTime.now().minusHours(1));
 
     // Giả lập người chiến thắng
     Bidder winner = new Bidder("bidder1", "alice", "pass");
     testAuction.setHighestBidder(winner);
     testAuction.setCurrentPrice(1500.0);
 
+    // Thêm vào hệ thống (Lệnh này sẽ nới rộng tác vụ ghi xuống DB)
     auctionManager.addAuction(testAuction);
+
+    // SỬA TẠI ĐÂY: Ép Hàng đợi ghi xong phiên mồi này rồi mới bắt đầu bài test
+    com.auction.server.database.DatabaseWriteQueue.getInstance().flushForTesting();
   }
 
   @AfterEach
   void tearDown() {
-    // Dọn dẹp để đảm bảo luồng ngầm không bị chạy kẹt lại sau khi test xong
-    scheduler.stop();
+    // SỬA TẠI ĐÂY: Dùng resetForTesting để dọn dẹp triệt để (đã bao gồm stop())
+    scheduler.resetForTesting();
   }
 
   /**

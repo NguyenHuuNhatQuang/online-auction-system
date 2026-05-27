@@ -1,14 +1,13 @@
 package com.auction.server;
 
 import com.auction.server.database.DatabaseConnection;
+import com.auction.server.database.DatabaseWriteQueue;
 import com.auction.server.network.AuctionServer;
+import com.auction.server.services.AuctionManager;
+import com.auction.server.services.AuctionScheduler;
+import com.auction.server.services.BiddingService;
 
-/**
- * Điểm neo khởi động (Entry Point) của toàn bộ hệ thống máy chủ.
- */
 public class Main {
-
-  /** Cổng mạng mặc định mà máy chủ sẽ sử dụng. */
   private static final int DEFAULT_PORT = 8080;
 
   public static void main(String[] args) {
@@ -16,24 +15,29 @@ public class Main {
     System.out.println("      HỆ THỐNG ĐẤU GIÁ TRỰC TUYẾN - SERVER       ");
     System.out.println("==================================================");
 
-    // Khởi tạo Database ngay khi bật Server
+    // 1. Khởi tạo Database và nạp dữ liệu lõi
     DatabaseConnection.initDatabase();
+    System.out.println("[System] Đang nạp dữ liệu hệ thống...");
+    AuctionManager.getInstance();
 
-    // 1. Khởi tạo phiên bản máy chủ
+    // 2. Chuẩn bị các dịch vụ phụ thuộc
+    BiddingService biddingService = new BiddingService();
     AuctionServer server = new AuctionServer(DEFAULT_PORT);
 
-    // 2. Đăng ký Shutdown Hook (Móc nối sự kiện tắt ứng dụng)
-    // Khi bạn nhấn Ctrl+C, hoặc đóng terminal, Java sẽ tự động chạy luồng này trước khi tắt hẳn.
-    Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-      System.out.println("\n[System] Nhận tín hiệu tắt máy chủ (SIGINT). Đang tiến hành dọn dẹp...");
-      server.stopServer();
+    // 3. Cấu hình và Bật luồng đếm ngược (PHẢI INIT TRƯỚC KHI START)
+    AuctionScheduler.getInstance().init(biddingService, server);
+    AuctionScheduler.getInstance().start();
 
-      // Đóng hàng đợi DB
-      com.auction.server.database.DatabaseWriteQueue.getInstance().shutdown();
+    // 4. Đăng ký quy trình dọn dẹp khi tắt Server
+    Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+      System.out.println("\n[System] Nhận tín hiệu tắt máy chủ. Đang tiến hành dọn dẹp...");
+      server.stopServer();
+      AuctionScheduler.getInstance().stop();
+      DatabaseWriteQueue.getInstance().shutdown();
+      System.out.println("[System] Đã tắt máy chủ an toàn.");
     }));
 
-    // 3. Kích hoạt máy chủ
-    // Lệnh này chứa vòng lặp while (isRunning) nên nó sẽ chạy vô hạn và giữ ứng dụng không bị tắt.
+    // 5. Khởi động Server Socket
     server.startServer();
   }
 }

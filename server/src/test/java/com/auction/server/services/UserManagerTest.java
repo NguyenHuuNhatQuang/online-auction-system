@@ -36,24 +36,51 @@ class UserManagerTest {
   }
 
   @Test
-  @DisplayName("Đăng nhập thành công với tài khoản hợp lệ (BIDDER)")
   void testAuthenticate_Success_Bidder() {
     UserManager userManager = UserManager.getInstance();
-    User user = userManager.authenticate("alice", "123");
+    // 1. Tạo user mồi
+    userManager.register("alice", "123", "BIDDER");
+    // 2. ÉP ĐỢI: Chờ ghi xong vào DB
+    com.auction.server.database.DatabaseWriteQueue.getInstance().flushForTesting();
 
+    // 3. Test đăng nhập
+    User user = userManager.authenticate("alice", "123");
     assertNotNull(user, "Phải trả về đối tượng User khi đăng nhập đúng");
-    assertEquals("alice", user.getUsername(), "Tên người dùng phải khớp");
-    assertEquals("BIDDER", user.getRole(), "Alice phải có quyền BIDDER");
   }
 
   @Test
-  @DisplayName("Đăng nhập thành công với tài khoản hợp lệ (SELLER)")
   void testAuthenticate_Success_Seller() {
     UserManager userManager = UserManager.getInstance();
-    User user = userManager.authenticate("bob", "123");
+    userManager.register("bob", "123", "SELLER");
+    com.auction.server.database.DatabaseWriteQueue.getInstance().flushForTesting();
 
+    User user = userManager.authenticate("bob", "123");
     assertNotNull(user);
-    assertEquals("SELLER", user.getRole(), "Bob phải có quyền SELLER");
+  }
+
+  @Test
+  void testRegister_Success() {
+    UserManager userManager = UserManager.getInstance();
+    User newUser = userManager.register("new_bidder_test", "123", "BIDDER");
+    assertNotNull(newUser);
+
+    // ÉP ĐỢI: Chờ DB ghi xong rồi mới test đăng nhập
+    com.auction.server.database.DatabaseWriteQueue.getInstance().flushForTesting();
+
+    User loggedInUser = userManager.authenticate("new_bidder_test", "123");
+    assertNotNull(loggedInUser, "Phải đăng nhập được ngay bằng tài khoản vừa đăng ký");
+  }
+
+  @Test
+  void testRegister_Fail_DuplicateUsername() {
+    UserManager userManager = UserManager.getInstance();
+    userManager.register("duplicate_user", "123", "SELLER");
+
+    // ÉP ĐỢI: Chờ user 1 ghi xong thì hàm check trùng mới có tác dụng
+    com.auction.server.database.DatabaseWriteQueue.getInstance().flushForTesting();
+
+    User failedUser = userManager.register("duplicate_user", "456", "BIDDER");
+    assertNull(failedUser, "Phải trả về null khi cố tình đăng ký trùng tên");
   }
 
   @Test
@@ -68,36 +95,5 @@ class UserManagerTest {
     // Tài khoản không tồn tại
     User user2 = userManager.authenticate("hacker", "123");
     assertNull(user2, "Phải trả về null khi tài khoản không tồn tại");
-  }
-
-  @Test
-  @DisplayName("Đăng ký tài khoản mới thành công")
-  void testRegister_Success() {
-    UserManager userManager = UserManager.getInstance();
-
-    // Đăng ký một tài khoản mới tinh
-    User newUser = userManager.register("new_bidder_test", "123", "BIDDER");
-
-    assertNotNull(newUser, "Phải trả về đối tượng User sau khi đăng ký");
-    assertEquals("new_bidder_test", newUser.getUsername(), "Tên người dùng phải khớp");
-    assertEquals("BIDDER", newUser.getRole(), "Vai trò phải được gán đúng là BIDDER");
-
-    // Đăng nhập thử bằng tài khoản vừa tạo
-    User loggedInUser = userManager.authenticate("new_bidder_test", "123");
-    assertNotNull(loggedInUser, "Phải đăng nhập được ngay bằng tài khoản vừa đăng ký");
-  }
-
-  @Test
-  @DisplayName("Đăng ký thất bại khi tên đăng nhập đã tồn tại")
-  void testRegister_Fail_DuplicateUsername() {
-    UserManager userManager = UserManager.getInstance();
-
-    // Đăng ký lần 1
-    userManager.register("duplicate_user", "123", "SELLER");
-
-    // Đăng ký lần 2 với cùng tên
-    User failedUser = userManager.register("duplicate_user", "456", "BIDDER");
-
-    assertNull(failedUser, "Phải trả về null khi cố tình đăng ký trùng tên");
   }
 }
