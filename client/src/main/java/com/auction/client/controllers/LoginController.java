@@ -78,7 +78,6 @@ public class LoginController {
             SceneManager.getInstance().setCurrentUser(username);
             SceneManager.getInstance().setUserRole(role);
 
-            // Chuyển trang
             SceneManager.getInstance().switchScene("/fxml/dashboard.fxml", "Sảnh Chờ - " + username + " (" + role + ")");
           } else if ("REGISTER_SUCCESS".equals(message.getAction())) {
             showAlert("Thành công", "Đăng ký tài khoản thành công! Vui lòng bấm Đăng nhập.");

@@ -17,11 +17,11 @@ public class DashboardController {
 
   @FXML private HBox createAuctionInputBox;
   @FXML private Button createAuctionBtn;
+  @FXML private Button adminPanelBtn;
 
   private NetworkClient networkClient;
   private String currentUser;
   private final ObjectMapper objectMapper = new ObjectMapper();
-
 
   @FXML
   public void initialize() {
@@ -31,9 +31,15 @@ public class DashboardController {
     welcomeLabel.setText("Sảnh Chờ Đấu Giá - Xin chào " + currentUser + " (" + userRole + ")");
     networkClient.setOnMessageReceived(this::handleServerMessage);
 
+    // Xử lý hiện/ẩn nút dựa trên quyền
     if ("BIDDER".equalsIgnoreCase(userRole)) {
       createAuctionBtn.setVisible(false);
       createAuctionBtn.setManaged(false);
+    }
+    // Nếu là Admin, hiện nút Bảng Quản Trị (Admin vẫn được phép dùng Kho Sản Phẩm)
+    if ("ADMIN".equalsIgnoreCase(userRole)) {
+      adminPanelBtn.setVisible(true);
+      adminPanelBtn.setManaged(true);
     }
 
     networkClient.sendMessage("{\"action\":\"GET_ACTIVE_AUCTIONS\", \"payload\":\"\"}");
@@ -218,5 +224,18 @@ public class DashboardController {
   // Hàm phụ trợ bọc JSON payload thành chuỗi hợp lệ
   private String escapeJson(String raw) {
     return "\"" + raw.replace("\"", "\\\"") + "\"";
+  }
+
+  @FXML
+  private void handleLogout() {
+    // Xóa session và quay về Login
+    SceneManager.getInstance().setCurrentUser(null);
+    SceneManager.getInstance().setUserRole(null);
+    SceneManager.getInstance().switchScene("/fxml/login.fxml", "Đăng nhập Sàn Đấu Giá");
+  }
+
+  @FXML
+  private void handleGoToAdminPanel() {
+    SceneManager.getInstance().switchScene("/fxml/admin_dashboard.fxml", "Bảng Điều Khiển Quản Trị Viên");
   }
 }

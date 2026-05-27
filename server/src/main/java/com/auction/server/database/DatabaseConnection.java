@@ -69,11 +69,16 @@ public class DatabaseConnection {
         + "FOREIGN KEY (bidder_id) REFERENCES users(id)"
         + ");";
 
+    // Thêm chuỗi SQL tiêm tài khoản Admin (Sử dụng 'admin' làm ID luôn cho đồng bộ)
+    String sqlInsertAdmin = "INSERT OR IGNORE INTO users (id, username, password, role) VALUES ('admin', 'admin', 'admin123', 'ADMIN');";
+
     try (Connection conn = getConnection(); Statement stmt = conn.createStatement()) {
       stmt.execute(sqlCreateUsers);
       stmt.execute(sqlCreateItems);
       stmt.execute(sqlCreateAuctions);
       stmt.execute(sqlCreateBidTransactions);
+      stmt.execute(sqlInsertAdmin);
+
       System.out.println("[Database] Đã khởi tạo cấu trúc các bảng SQLite thành công.");
     } catch (SQLException e) {
       System.err.println("[Database] Lỗi khởi tạo cơ sở dữ liệu: " + e.getMessage());

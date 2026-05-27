@@ -91,6 +91,12 @@ public class MessageRouter {
         case "PAY_AUCTION": // Tính năng Thanh toán phiên mới
           handlePayAuction(message.getPayload(), client);
           break;
+        case "ADMIN_GET_USERS":
+          handleAdminGetUsers(client);
+          break;
+        case "ADMIN_CHANGE_ROLE":
+          handleAdminChangeRole(message.getPayload(), client);
+          break;
         default:
           sendError(client, "Hành động không được hệ thống hỗ trợ: " + message.getAction());
           break;
@@ -414,6 +420,44 @@ public class MessageRouter {
       client.sendMessage(objectMapper.writeValueAsString(errorMsg));
     } catch (JsonProcessingException e) {
       e.printStackTrace(); // Log lỗi server nếu việc tạo JSON lỗi bị hỏng
+    }
+  }
+
+  private void handleAdminGetUsers(ClientHandler client) {
+    try {
+      java.util.List<com.auction.common.models.User> users = new com.auction.server.database.UserDAO().getAllUsers();
+      StringBuilder payload = new StringBuilder("[");
+      for (int i = 0; i < users.size(); i++) {
+        com.auction.common.models.User u = users.get(i);
+        payload.append(String.format("{\"username\":\"%s\", \"role\":\"%s\"}", u.getUsername(), u.getRole()));
+        if (i < users.size() - 1) payload.append(",");
+      }
+      payload.append("]");
+
+      client.sendMessage(String.format("{\"action\":\"ADMIN_USER_LIST\", \"payload\":%s}", escapeJson(payload.toString())));
+    } catch (Exception e) {
+      sendError(client, "Lỗi lấy danh sách người dùng.");
+    }
+  }
+
+  private void handleAdminChangeRole(String payloadJson, ClientHandler client) {
+    try {
+      JsonNode node = objectMapper.readTree(payloadJson);
+      String targetUsername = node.get("username").asText();
+      String newRole = node.get("newRole").asText();
+
+      // Đẩy lệnh xuống hàng đợi để ghi an toàn
+      com.auction.server.database.DatabaseWriteQueue.getInstance().execute(() -> {
+        try {
+          new com.auction.server.database.UserDAO().updateUserRole(targetUsername, newRole);
+          // Gửi lại danh sách mới nhất cho Admin
+          handleAdminGetUsers(client);
+        } catch (Exception e) {
+          System.err.println("[Admin] Lỗi cập nhật quyền: " + e.getMessage());
+        }
+      });
+    } catch (Exception e) {
+      sendError(client, "Lỗi phân tích yêu cầu đổi quyền.");
     }
   }
 }
