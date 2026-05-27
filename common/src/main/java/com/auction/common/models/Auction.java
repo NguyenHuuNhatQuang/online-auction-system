@@ -19,6 +19,7 @@ public class Auction extends Entity {
 
   private LocalDateTime startTime;
   private LocalDateTime endTime;
+  private final java.util.List<BidTransaction> bidHistory = new java.util.ArrayList<>();
 
   /**
    * Khởi tạo một phiên đấu giá mới. Trạng thái mặc định là "OPEN".
@@ -90,5 +91,13 @@ public class Auction extends Entity {
 
   public synchronized void setStatus(String status) {
     this.status = status;
+  }
+
+  public void addBidTransaction(BidTransaction transaction) {
+    this.bidHistory.add(transaction);
+  }
+
+  public java.util.List<BidTransaction> getBidHistory() {
+    return this.bidHistory;
   }
 }

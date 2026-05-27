@@ -101,15 +101,28 @@ public class AuctionRoomController {
               JsonNode stateNode = objectMapper.readTree(message.getPayload());
               itemNameLabel.setText("Sản phẩm: " + stateNode.get("itemName").asText());
               itemDescLabel.setText("Mô tả: " + stateNode.get("itemDesc").asText());
-              currentPriceLabel.setText(String.format("Giá cao nhất: $%.2f", stateNode.get("currentPrice").asDouble()));
+              currentPriceLabel.setText(String.format("Giá hiện tại: $%.2f", stateNode.get("currentPrice").asDouble()));
               highestBidderLabel.setText("Người giữ giá: " + stateNode.get("highestBidder").asText());
 
+              // Xóa trắng log cũ để chuẩn bị in lịch sử mới
+              logArea.clear();
+              logArea.appendText("=== CHÀO MỪNG ĐẾN PHÒNG ĐẤU GIÁ ===\n");
+
+              // Đọc mảng lịch sử (nếu có) và in ra màn hình
+              if (stateNode.has("bidHistory")) {
+                JsonNode historyArray = stateNode.get("bidHistory");
+                for (JsonNode txNode : historyArray) {
+                  String bidder = txNode.get("bidder").asText();
+                  double amount = txNode.get("amount").asDouble();
+                  logArea.appendText(">> Lịch sử: " + bidder + " đã đặt giá $" + amount + "\n");
+                }
+              }
+
               String status = stateNode.get("status").asText();
-              if ("CLOSED".equals(status) || "FINISHED".equals(status)) {
+              if ("CLOSED".equals(status) || "FINISHED".equals(status) || "PAID".equals(status)) {
                 timerLabel.setText("ĐÃ KẾT THÚC");
                 bidAmountField.setDisable(true);
               } else {
-                // Khởi động đồng hồ đếm ngược
                 this.endTime = LocalDateTime.parse(stateNode.get("endTime").asText());
                 startCountdownTimer();
               }

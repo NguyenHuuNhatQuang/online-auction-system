@@ -34,7 +34,20 @@ public class AuctionManager {
   private void loadAuctionsFromDatabase() {
     try {
       Collection<Auction> dbAuctions = auctionDAO.getAllAuctions();
+      com.auction.server.database.BidTransactionDAO bidDAO = new com.auction.server.database.BidTransactionDAO(); // KHỞI TẠO DAO
+
       for (Auction a : dbAuctions) {
+        // 1. Lấy toàn bộ lịch sử của phiên này từ DB
+        java.util.List<com.auction.common.models.BidTransaction> history = bidDAO.getBidsByAuction(a.getId());
+
+        // 2. Bơm vào đối tượng Auction (Giả sử lớp Auction của bạn có method setBidHistory hoặc addBid)
+        // Nếu lớp Auction chưa có, bạn hãy thêm List<BidTransaction> bidHistory vào model Auction nhé.
+        if (history != null && !history.isEmpty()) {
+          for(com.auction.common.models.BidTransaction tx : history) {
+            a.addBidTransaction(tx); // Thêm hàm này vào class Auction nếu chưa có
+          }
+        }
+
         auctions.put(a.getId(), a);
       }
       System.out.println("[AuctionManager] Đồng bộ thành công " + dbAuctions.size() + " phiên đấu giá từ SQLite lên bộ nhớ RAM.");

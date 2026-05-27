@@ -188,35 +188,38 @@ public class MessageRouter {
 
   private void handleGetAuctionState(String payloadJson, ClientHandler client) {
     try {
-      JsonNode payloadNode = objectMapper.readTree(payloadJson);
-      String targetId = payloadNode.get("auctionId").asText();
-
-      // Lấy phiên đấu giá từ kho (Lưu ý: Giả định kho của bạn là HashMap dùng ID làm key)
-      Auction auction = AuctionManager.getInstance().getAllAuctions().stream()
-          .filter(a -> targetId.equals(a.getId()))
-          .findFirst()
-          .orElse(null);
+      String auctionId = objectMapper.readTree(payloadJson).get("auctionId").asText();
+      com.auction.common.models.Auction auction = com.auction.server.services.AuctionManager.getInstance().getAuction(auctionId);
 
       if (auction != null) {
-        // Xác định người đang trả giá cao nhất (nếu chưa có ai thì để là "Chưa có")
-        String bidderName = "Chưa có";
-        // Lưu ý: Tùy vào cách bạn thiết kế model Auction, có thể bạn lưu Bidder object hoặc tên thẳng
-        // Dưới đây giả định bạn có thuộc tính highestBidder trong class Auction
-        if (auction.getHighestBidder() != null) {
-          bidderName = auction.getHighestBidder().getUsername();
-        }
+        String bidderName = (auction.getHighestBidder() != null) ? auction.getHighestBidder().getUsername() : "Chưa có";
 
+        // 1. Chuyển đổi danh sách lịch sử thành mảng JSON
+        StringBuilder historyJson = new StringBuilder("[");
+        java.util.List<com.auction.common.models.BidTransaction> history = auction.getBidHistory();
+        for (int i = 0; i < history.size(); i++) {
+          com.auction.common.models.BidTransaction tx = history.get(i);
+          // Lưu ý: Sử dụng đúng hàm getBidAmount() theo như bạn đã sửa đổi trước đó
+          historyJson.append(String.format("{\"bidder\":\"%s\", \"amount\":%s}",
+              tx.getBidder().getUsername(), tx.getBidAmount()));
+          if (i < history.size() - 1) historyJson.append(",");
+        }
+        historyJson.append("]");
+
+        // 2. Gắn thêm mảng bidHistory vào payload
         String payload = String.format(
-            "{\"auctionId\":\"%s\", \"itemName\":\"%s\", \"itemDesc\":\"%s\", \"currentPrice\":%s, \"highestBidder\":\"%s\", \"endTime\":\"%s\", \"status\":\"%s\"}",
+            "{\"auctionId\":\"%s\", \"itemName\":\"%s\", \"itemDesc\":\"%s\", \"currentPrice\":%s, \"highestBidder\":\"%s\", \"endTime\":\"%s\", \"status\":\"%s\", \"bidHistory\":%s}",
             auction.getId(), auction.getItem().getName(), auction.getItem().getDescription(),
-            auction.getCurrentPrice(), bidderName, auction.getEndTime().toString(), auction.getStatus()
+            auction.getCurrentPrice(), bidderName, auction.getEndTime().toString(), auction.getStatus(), historyJson.toString()
         );
 
-        String response = String.format("{\"action\":\"AUCTION_STATE\", \"payload\":%s}", escapeJson(payload));
-        client.sendMessage(response);
+        SocketMessage response = new SocketMessage("AUCTION_STATE", payload);
+        client.sendMessage(objectMapper.writeValueAsString(response));
+      } else {
+        sendError(client, "Không tìm thấy phiên đấu giá.");
       }
     } catch (Exception e) {
-      System.err.println("[Router] Lỗi khi lấy trạng thái phiên: " + e.getMessage());
+      sendError(client, "Lỗi lấy trạng thái đấu giá.");
     }
   }
 

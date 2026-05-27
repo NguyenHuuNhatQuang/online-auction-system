@@ -96,6 +96,8 @@ public class BiddingService {
       String transactionId = "TX_" + java.util.UUID.randomUUID().toString().substring(0, 8);
       com.auction.common.models.BidTransaction bidTx = new com.auction.common.models.BidTransaction(transactionId, auctionId, bidder, bidAmount, java.time.LocalDateTime.now());
 
+      auction.addBidTransaction(bidTx);
+
       DatabaseWriteQueue.getInstance().execute(() -> {
         try {
           new com.auction.server.database.BidTransactionDAO().insertBid(bidTx);

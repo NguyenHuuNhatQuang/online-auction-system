@@ -40,7 +40,8 @@ public class UserManager {
       return null;
     }
 
-    String newId = "U_" + UUID.randomUUID().toString().substring(0, 8);
+    String newId = username;
+
     User newUser = "SELLER".equalsIgnoreCase(role)
         ? new Seller(newId, username, password)
         : new Bidder(newId, username, password);
