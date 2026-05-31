@@ -294,4 +294,51 @@ class MessageRouterTest {
     assertTrue(broadcastMessage.contains("AUCTION_PAID"), "Phải phát sóng lệnh AUCTION_PAID");
     assertTrue(broadcastMessage.contains("auction_test_1"), "Phải phát loa đúng mã phiên");
   }
+
+  @Test
+  @DisplayName("Định tuyến đúng khi Admin yêu cầu lấy danh sách người dùng")
+  void testRoute_AdminGetUsers() throws Exception {
+    // 1. Tạo user mồi
+    com.auction.server.services.UserManager.getInstance().register("test_bidder", "123", "BIDDER");
+    com.auction.server.database.DatabaseWriteQueue.getInstance().flushForTesting();
+
+    // 2. Gửi lệnh
+    String json = "{\"action\":\"ADMIN_GET_USERS\", \"payload\":\"\"}";
+    messageRouter.route(json, mockClient);
+
+    // 3. Chờ hàng đợi mạng xử lý (nếu cần) và kiểm tra
+    ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
+    verify(mockClient).sendMessage(captor.capture());
+    assertTrue(captor.getValue().contains("ADMIN_USER_LIST"), "Phải phản hồi danh sách User cho Admin");
+    assertTrue(captor.getValue().contains("test_bidder"), "Danh sách phải chứa user vừa tạo");
+  }
+
+  @Test
+  @DisplayName("Định tuyến đúng khi Admin ép dừng phiên đấu giá")
+  void testRoute_AdminForceStopAuction() throws Exception {
+    // 1. Chuẩn bị dữ liệu: Tạo Item và Auction đang chạy
+    com.auction.common.models.Item item = new com.auction.common.models.Electronics("item_force_stop", "TV", "Desc", 12);
+    com.auction.server.services.ItemManager.getInstance().addItem(item, "seller1");
+
+    com.auction.common.models.Auction auction = new com.auction.common.models.Auction(
+        "auc_force_stop", item, new com.auction.common.models.Seller("seller1", "seller1", "123"),
+        100.0, java.time.LocalDateTime.now(), java.time.LocalDateTime.now().plusHours(1));
+    com.auction.server.services.AuctionManager.getInstance().addAuction(auction);
+    com.auction.server.database.DatabaseWriteQueue.getInstance().flushForTesting();
+
+    auction.setStatus("RUNNING");
+
+    // 2. Gửi lệnh dừng khẩn cấp
+    String json = "{"
+        + "\"action\":\"ADMIN_FORCE_STOP_AUCTION\","
+        + "\"payload\":\"{\\\"auctionId\\\":\\\"auc_force_stop\\\"}\""
+        + "}";
+    messageRouter.route(json, mockClient);
+
+    // 3. Ép đợi xử lý DB và kiểm tra trạng thái trên RAM
+    com.auction.server.database.DatabaseWriteQueue.getInstance().flushForTesting();
+    com.auction.common.models.Auction stoppedAuction = com.auction.server.services.AuctionManager.getInstance().getAuction("auc_force_stop");
+
+    assertEquals("CANCELED", stoppedAuction.getStatus(), "Phiên đấu giá phải chuyển sang trạng thái CANCELED");
+  }
 }
