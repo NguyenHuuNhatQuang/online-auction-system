@@ -140,7 +140,7 @@ public class MessageRouter {
 
         // 2. REALTIME UPDATE: Phát sóng giá mới cho TẤT CẢ mọi người đang online
         String broadcastPayload = String.format(
-            "{\"auctionId\":\"%s\", \"newPrice\":%f, \"highestBidder\":\"%s\"}",
+            "{\"auctionId\":\"%s\", \"newPrice\":%s, \"highestBidder\":\"%s\"}",
             auctionId, amount, username
         );
         SocketMessage broadcastMsg = new SocketMessage("NEW_BID_BROADCAST", broadcastPayload);
