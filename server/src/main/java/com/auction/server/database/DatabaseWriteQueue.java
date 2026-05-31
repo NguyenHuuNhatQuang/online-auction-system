@@ -40,23 +40,6 @@ public class DatabaseWriteQueue {
   }
 
   /**
-   * Chặn luồng hiện tại cho đến khi mọi tác vụ đang xếp hàng (kể cả tác vụ ghi
-   * vừa được {@link #execute(Runnable)} đưa vào trước đó) đã chạy xong.
-   *
-   * <p>Dùng khi cần đọc lại dữ liệu ngay sau một lệnh ghi (ví dụ: ADD_ITEM rồi
-   * trả về danh sách kho cho client). Vì hàng đợi chỉ có 1 luồng và chạy FIFO,
-   * khi tác vụ rỗng này hoàn tất thì mọi tác vụ ghi trước nó cũng đã hoàn tất —
-   * nhờ đó tránh được race condition "ghi bất đồng bộ rồi đọc ngay".</p>
-   */
-  public void flush() {
-    try {
-      writerThread.submit(() -> { }).get();
-    } catch (Exception e) {
-      Thread.currentThread().interrupt();
-    }
-  }
-
-  /**
    * Đóng hàng đợi an toàn khi tắt Server.
    */
   public void shutdown() {
@@ -76,6 +59,12 @@ public class DatabaseWriteQueue {
    * Điều này giúp nhả file lock và đảm bảo dữ liệu đã sẵn sàng để truy vấn.
    */
   public void flushForTesting() {
-    flush();
+    try {
+      // Ném một tác vụ rỗng vào hàng đợi và dùng .get() để block luồng hiện tại
+      // cho đến khi tác vụ rỗng này (và mọi tác vụ trước nó) chạy xong.
+      writerThread.submit(() -> {}).get();
+    } catch (Exception e) {
+      // Bỏ qua lỗi trong lúc test
+    }
   }
 }

@@ -64,12 +64,7 @@ public class BiddingService {
     try {
       // 1. Kiểm tra thời gian
       if (LocalDateTime.now().isAfter(auction.getEndTime())) {
-        // KHÔNG tự đóng phiên ở đây. Để AuctionScheduler (chạy mỗi 1 giây) phát hiện
-        // hết hạn rồi vừa đổi trạng thái FINISHED vừa broadcast AUCTION_FINISHED cho
-        // TOÀN BỘ client. Nếu tự set FINISHED tại đây, scheduler sẽ bỏ qua (do trạng
-        // thái không còn RUNNING) và không có ai được thông báo realtime -> phiên
-        // "biến mất" khỏi danh sách LIVE mà không xuất hiện ở mục "Đã kết thúc"
-        // cho tới khi client tải lại trang.
+        auction.setStatus("FINISHED");
         throw new IllegalStateException("Phiên đấu giá đã kết thúc do hết thời gian quy định.");
       }
 
@@ -146,8 +141,7 @@ public class BiddingService {
       try {
         // Kiểm tra lại trạng thái và thời gian sau khi đã vào trong vùng an toàn (Critical Section)
         if ("RUNNING".equals(auction.getStatus()) && LocalDateTime.now().isAfter(auction.getEndTime())) {
-          // Đổi trạng thái trên RAM VÀ lưu xuống DB (tránh mất trạng thái khi restart server).
-          auctionManager.updateAuctionStatus(auction.getId(), "FINISHED");
+          auction.setStatus("FINISHED");
           return auction; // Trả về để Scheduler biết mà thông báo cho Client
         }
       } finally {

@@ -5,7 +5,6 @@ import com.auction.common.models.Auction;
 import com.auction.common.models.Bidder;
 import com.auction.common.models.Item;
 import com.auction.common.models.Seller;
-import com.auction.server.database.DatabaseWriteQueue;
 import com.auction.server.factories.ItemFactory;
 import com.auction.server.services.AuctionManager;
 import com.auction.server.services.BiddingService;
@@ -141,7 +140,7 @@ public class MessageRouter {
 
         // 2. REALTIME UPDATE: Phát sóng giá mới cho TẤT CẢ mọi người đang online
         String broadcastPayload = String.format(
-            "{\"auctionId\":\"%s\", \"newPrice\":%f, \"highestBidder\":\"%s\"}",
+            "{\"auctionId\":\"%s\", \"newPrice\":%s, \"highestBidder\":\"%s\"}",
             auctionId, amount, username
         );
         SocketMessage broadcastMsg = new SocketMessage("NEW_BID_BROADCAST", broadcastPayload);
@@ -189,6 +188,8 @@ public class MessageRouter {
       SocketMessage successMsg = new SocketMessage("AUCTION_CREATED", responsePayload);
       client.sendMessage(objectMapper.writeValueAsString(successMsg));
 
+      // Bổ sung itemType/sellerName/bidCount để UI (lọc theo loại, hiện người bán,
+      // số lượt bid trên Sảnh chờ) hoạt động đầy đủ với backend này.
       String broadcastPayload = String.format(
           "{\"auctionId\":\"%s\", \"itemName\":\"%s\", \"itemDesc\":\"%s\", \"currentPrice\":%s, \"highestBidder\":\"Chưa có\", \"endTime\":\"%s\", \"status\":\"RUNNING\", \"itemType\":\"%s\", \"sellerName\":\"%s\", \"bidCount\":0}",
           auctionId, item.getName(), item.getDescription(), startPrice, endTime.toString(), item.getItemType(), sellerName
@@ -243,16 +244,19 @@ public class MessageRouter {
     StringBuilder payload = new StringBuilder("[");
     Collection<Auction> allAuctions = AuctionManager.getInstance().getAllAuctions();
 
-    // Lấy cả phiên RUNNING và FINISHED
+    // Lấy mọi phiên còn hiển thị trên Sảnh chờ: đang chạy + đã kết thúc/thanh toán/hủy
+    // (CANCELED để tab "Đã kết thúc" của client hiện đủ lịch sử).
     List<Auction> activeAuctions = allAuctions.stream()
         .filter(a -> "RUNNING".equals(a.getStatus())
             || "FINISHED".equals(a.getStatus())
-            || "PAID".equals(a.getStatus()))
+            || "PAID".equals(a.getStatus())
+            || "CANCELED".equals(a.getStatus()))
         .toList();
 
     for (int i = 0; i < activeAuctions.size(); i++) {
       Auction session = activeAuctions.get(i);
       String bidderName = (session.getHighestBidder() != null) ? session.getHighestBidder().getUsername() : "Chưa có";
+      // Bổ sung itemType/sellerName/bidCount cho UI Sảnh chờ.
       String sellerName = (session.getSeller() != null) ? session.getSeller().getUsername() : "—";
       int bidCount = (session.getBidHistory() != null) ? session.getBidHistory().size() : 0;
 
@@ -314,10 +318,9 @@ public class MessageRouter {
       Item item = ItemFactory.createItem(itemType, itemName, itemDesc, attributes);
       com.auction.server.services.ItemManager.getInstance().addItem(item, sellerId);
 
-      // Chờ lệnh INSERT (bất đồng bộ) ghi xong rồi mới đọc lại kho, tránh trả về
-      // danh sách thiếu sản phẩm vừa thêm (đặc biệt khi đây là sản phẩm đầu tiên).
-      DatabaseWriteQueue.getInstance().flush();
-      sendSellerItems(sellerId, client);
+      com.auction.server.database.DatabaseWriteQueue.getInstance().execute(() -> {
+        try { sendSellerItems(sellerId, client); } catch (Exception e) {}
+      });
     } catch (Exception e) {
       sendError(client, "Không thể thêm sản phẩm: " + e.getMessage());
     }
@@ -343,8 +346,9 @@ public class MessageRouter {
 
       com.auction.server.services.ItemManager.getInstance().updateItem(itemId, newName, newDesc);
 
-      DatabaseWriteQueue.getInstance().flush(); // Chờ ghi xong rồi mới refresh list
-      sendSellerItems(sellerId, client); // Refresh lại list
+      com.auction.server.database.DatabaseWriteQueue.getInstance().execute(() -> {
+        try { sendSellerItems(sellerId, client); } catch (Exception e) {}
+      });
     } catch (Exception e) {
       sendError(client, "Lỗi cập nhật sản phẩm.");
     }
@@ -357,8 +361,10 @@ public class MessageRouter {
       String sellerId = payloadNode.get("sellerId").asText();
 
       com.auction.server.services.ItemManager.getInstance().deleteItem(itemId);
-      DatabaseWriteQueue.getInstance().flush(); // Chờ xóa xong rồi mới refresh list
-      sendSellerItems(sellerId, client);
+
+      com.auction.server.database.DatabaseWriteQueue.getInstance().execute(() -> {
+        try { sendSellerItems(sellerId, client); } catch (Exception e) {}
+      });
     } catch (Exception e) {
       sendError(client, "Lỗi thực thi lệnh xóa.");
     }
@@ -413,8 +419,7 @@ public class MessageRouter {
       Auction auction = AuctionManager.getInstance().getAuction(auctionId);
 
       if (auction != null && "FINISHED".equals(auction.getStatus())) {
-        // Đổi trạng thái trên RAM VÀ lưu xuống DB (giữ trạng thái PAID khi restart server).
-        AuctionManager.getInstance().updateAuctionStatus(auctionId, "PAID");
+        auction.setStatus("PAID");
 
         // Broadcast cho toàn server biết phiên này đã thanh toán xong
         String payload = String.format("{\"auctionId\":\"%s\"}", auctionId);
@@ -501,7 +506,9 @@ public class MessageRouter {
     try {
       String itemId = objectMapper.readTree(payloadJson).get("itemId").asText();
       com.auction.server.services.ItemManager.getInstance().deleteItem(itemId);
-      handleAdminGetAllItems(client); // Refresh lại danh sách cho Admin
+      com.auction.server.database.DatabaseWriteQueue.getInstance().execute(() -> {
+        try { handleAdminGetAllItems(client); } catch (Exception e) {}
+      });
     } catch (Exception e) {
       sendError(client, "Lỗi xóa sản phẩm.");
     }

@@ -18,7 +18,7 @@ import java.util.concurrent.Executors;
 public class AuctionServer {
 
   /** Cổng mạng (Port) mà máy chủ sẽ lắng nghe kết nối. */
-  private final int port;
+  private int port;
 
   /** Trạng thái hoạt động của máy chủ (true: đang chạy, false: đã dừng). */
   private boolean isRunning;
@@ -49,14 +49,29 @@ public class AuctionServer {
    * chấp nhận (accept) các kết nối Socket đi vào từ phía Client.
    */
   public void startServer() {
-    this.isRunning = true;
-
-    // Khởi tạo và kích hoạt bộ quét thời gian đấu giá tự động
-    BiddingService biddingService = new BiddingService();
-
     try {
-      this.serverSocket = new ServerSocket(port);
-      System.out.println("[AuctionServer] Máy chủ đang hoạt động tại port " + port + "...");
+      this.isRunning = true;
+      BiddingService biddingService = new BiddingService();
+      boolean isBound = false;
+
+      // VÒNG LẶP DÒ PORT: Nếu bị chiếm, tự động thử port tiếp theo
+      while (!isBound && port <= 65535) {
+        try {
+          this.serverSocket = new ServerSocket(port);
+          isBound = true;
+          System.out.println("[AuctionServer] Máy chủ đang hoạt động tại port " + port + "...");
+        } catch (IOException e) {
+          System.err.println("[AuctionServer] Port " + port + " đang bị chiếm. Đang thử port " + (port + 1) + "...");
+          port++; // Tăng port lên 1 và thử lại ở vòng lặp tiếp theo
+        }
+      }
+
+      // Nếu duyệt đến 65535 mà vẫn không có port nào rảnh
+      if (!isBound) {
+        System.err.println("[AuctionServer] Lỗi nghiêm trọng: Không tìm thấy port trống nào!");
+        stopServer();
+        return;
+      }
 
       while (isRunning) {
         Socket clientSocket = serverSocket.accept();
