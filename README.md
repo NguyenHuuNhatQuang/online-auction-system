@@ -81,9 +81,3 @@ java -jar client/target/client-runnable.jar
 
 * **Link báo cáo PDF:** [Github Link](https://github.com/NguyenHuuNhatQuang/online-auction-system/blob/main/report.pdf) hoặc [Google Drive Link](https://drive.google.com/file/d/16QwXcvbkHzm8lJfUbeuD-g8VS25BNjKU/)
 * **Link video demo:** [Chèn link YouTube / Google Drive tại đây]
-
-## 8. Tài khoản & ghi chú
-
-- File CSDL `auction_system.db` được tạo tự động khi chạy server lần đầu (không commit
-  vào repo vì là dữ liệu runtime).
-- Có thể tự đăng ký tài khoản mới qua màn hình **Đăng ký** trên client.
