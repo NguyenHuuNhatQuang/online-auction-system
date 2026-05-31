@@ -142,19 +142,39 @@ public class AdminDashboardController {
     String username = selected.substring(selected.indexOf("]") + 1).trim();
     String currentUser = SceneManager.getInstance().getCurrentUser();
 
-    // Bảo vệ tối đa: Không thể sửa quyền của chính mình đang đăng nhập
+    // 1. Kiểm tra nếu người dùng đang tự thao tác lên chính tài khoản của mình
     if (username.equals(currentUser)) {
-      showAlert("Cảnh báo", "Bạn không thể tự thay đổi quyền của chính mình!");
-      return;
-    }
-    // Bảo vệ thêm: Tuyệt đối không ai được động vào tài khoản admin gốc
-    if ("admin".equals(username)) {
-      showAlert("Cảnh báo", "Bạn không thể thay đổi quyền của Admin tối cao!");
-      return;
+      // Ngoại lệ: Nếu là admin gốc đang muốn nghỉ hưu (hủy quyền ADMIN của mình)
+      if ("admin".equals(currentUser) && !"ADMIN".equals(newRole)) {
+        // Đếm số lượng Admin hiện tại trong hệ thống thông qua ListView
+        long adminCount = userListView.getItems().stream().filter(s -> s.startsWith("[ADMIN]")).count();
+        if (adminCount <= 1) {
+          showAlert("Cảnh báo", "Không thể tự xóa quyền! Hệ thống phải có ít nhất 1 Admin khác để kế nhiệm bạn.");
+          return;
+        }
+      } else {
+        showAlert("Cảnh báo", "Bạn không thể tự thay đổi quyền của chính mình!");
+        return;
+      }
+    } else {
+      // 2. Nếu đang sửa quyền của người KHÁC, không được phép phế truất admin gốc
+      if ("admin".equals(username)) {
+        showAlert("Cảnh báo", "Không ai được quyền thay đổi chức vụ của Admin tối cao!");
+        return;
+      }
     }
 
+    // 3. Gửi lệnh cập nhật quyền lên Server
     String payload = String.format("{\"username\":\"%s\", \"newRole\":\"%s\"}", username, newRole);
     networkClient.sendMessage(String.format("{\"action\":\"ADMIN_CHANGE_ROLE\", \"payload\":%s}", escapeJson(payload)));
+
+    // 4. Nếu admin gốc vừa tự phế truất thành công, bắt buộc đăng xuất lập tức
+    if (username.equals(currentUser) && "admin".equals(username)) {
+      showAlert("Thông báo", "Bạn đã tự gỡ quyền Admin thành công. Hệ thống sẽ đăng xuất tài khoản.");
+      SceneManager.getInstance().setCurrentUser(null);
+      SceneManager.getInstance().setUserRole(null);
+      SceneManager.getInstance().switchScene("/fxml/login.fxml", "Đăng nhập Sàn Đấu Giá");
+    }
   }
 
   @FXML

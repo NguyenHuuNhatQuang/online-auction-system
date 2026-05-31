@@ -310,7 +310,9 @@ public class MessageRouter {
       Item item = ItemFactory.createItem(itemType, itemName, itemDesc, attributes);
       com.auction.server.services.ItemManager.getInstance().addItem(item, sellerId);
 
-      sendSellerItems(sellerId, client);
+      com.auction.server.database.DatabaseWriteQueue.getInstance().execute(() -> {
+        try { sendSellerItems(sellerId, client); } catch (Exception e) {}
+      });
     } catch (Exception e) {
       sendError(client, "Không thể thêm sản phẩm: " + e.getMessage());
     }
@@ -336,7 +338,9 @@ public class MessageRouter {
 
       com.auction.server.services.ItemManager.getInstance().updateItem(itemId, newName, newDesc);
 
-      sendSellerItems(sellerId, client); // Refresh lại list
+      com.auction.server.database.DatabaseWriteQueue.getInstance().execute(() -> {
+        try { sendSellerItems(sellerId, client); } catch (Exception e) {}
+      });
     } catch (Exception e) {
       sendError(client, "Lỗi cập nhật sản phẩm.");
     }
@@ -349,7 +353,10 @@ public class MessageRouter {
       String sellerId = payloadNode.get("sellerId").asText();
 
       com.auction.server.services.ItemManager.getInstance().deleteItem(itemId);
-      sendSellerItems(sellerId, client);
+
+      com.auction.server.database.DatabaseWriteQueue.getInstance().execute(() -> {
+        try { sendSellerItems(sellerId, client); } catch (Exception e) {}
+      });
     } catch (Exception e) {
       sendError(client, "Lỗi thực thi lệnh xóa.");
     }
@@ -491,7 +498,9 @@ public class MessageRouter {
     try {
       String itemId = objectMapper.readTree(payloadJson).get("itemId").asText();
       com.auction.server.services.ItemManager.getInstance().deleteItem(itemId);
-      handleAdminGetAllItems(client); // Refresh lại danh sách cho Admin
+      com.auction.server.database.DatabaseWriteQueue.getInstance().execute(() -> {
+        try { handleAdminGetAllItems(client); } catch (Exception e) {}
+      });
     } catch (Exception e) {
       sendError(client, "Lỗi xóa sản phẩm.");
     }
