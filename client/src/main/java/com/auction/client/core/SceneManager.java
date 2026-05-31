@@ -21,6 +21,8 @@ public class SceneManager {
   private String currentAuctionId;
   private String userRole;
   private String registerRole; // Vai trò tạm thời truyền sang màn Đăng ký (BIDDER/SELLER)
+  private String defaultHost = "127.0.0.1"; // Gợi ý sẵn cho màn hình Kết nối máy chủ
+  private int defaultPort = 8080;
 
   private SceneManager() {}
 
@@ -67,6 +69,11 @@ public class SceneManager {
 
   // --- Getter / Setter ---
   public NetworkClient getNetworkClient() { return networkClient; }
+  public void setNetworkClient(NetworkClient networkClient) { this.networkClient = networkClient; }
+  public String getDefaultHost() { return defaultHost; }
+  public void setDefaultHost(String defaultHost) { this.defaultHost = defaultHost; }
+  public int getDefaultPort() { return defaultPort; }
+  public void setDefaultPort(int defaultPort) { this.defaultPort = defaultPort; }
   public String getCurrentUser() { return currentUser; }
   public void setCurrentUser(String currentUser) { this.currentUser = currentUser; }
   public String getCurrentAuctionId() { return currentAuctionId; }

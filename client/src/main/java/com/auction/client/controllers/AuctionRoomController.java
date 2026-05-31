@@ -118,7 +118,10 @@ public class AuctionRoomController {
               logArea.clear();
               logArea.appendText("=== CHÀO MỪNG ĐẾN PHÒNG ĐẤU GIÁ ===\n");
 
-              // THÊM BIỂU ĐỒ: Vẽ lại toàn bộ lịch sử nếu có
+              // THÊM BIỂU ĐỒ: Vẽ lại toàn bộ lịch sử nếu có.
+              // Xóa luôn categories của trục X để tránh bug JavaFX LineChart
+              // (trục bị trùng nhãn cũ khi vào lại phòng) — đi kèm animated=false.
+              ((javafx.scene.chart.CategoryAxis) bidChart.getXAxis()).getCategories().clear();
               bidSeries.getData().clear();
               bidStepCount = 1;
 

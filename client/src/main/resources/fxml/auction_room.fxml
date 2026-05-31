@@ -64,7 +64,7 @@
             <!-- Chart -->
             <VBox styleClass="card" spacing="8">
                 <Label text="📈 Diễn biến giá" styleClass="text-subtitle"/>
-                <LineChart fx:id="bidChart" prefHeight="250" title="Trực quan hóa diễn biến giá" animated="true">
+                <LineChart fx:id="bidChart" prefHeight="250" title="Trực quan hóa diễn biến giá" animated="false">
                     <xAxis>
                         <CategoryAxis label="Lượt đặt"/>
                     </xAxis>

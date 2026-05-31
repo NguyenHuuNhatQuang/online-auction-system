@@ -1,23 +1,19 @@
 package com.auction.client;
 
 import com.auction.client.core.SceneManager;
-import com.auction.client.network.NetworkClient;
 import javafx.application.Application;
 import javafx.stage.Stage;
 
-import java.io.IOException;
-
 public class AuctionClientApp extends Application {
-
-  private NetworkClient networkClient;
 
   @Override
   public void start(Stage primaryStage) {
-    // Xác định địa chỉ máy chủ. Thứ tự ưu tiên:
+    // Xác định địa chỉ máy chủ GỢI Ý cho màn hình "Kết nối máy chủ". Thứ tự ưu tiên:
     //   1) Tham số dòng lệnh:  java -jar client.jar <host> <port>
     //   2) Biến môi trường:    AUCTION_HOST / AUCTION_PORT
     //   3) Mặc định:           127.0.0.1:8080 (chạy nội bộ)
-    // Nhờ vậy có thể trỏ client tới địa chỉ public (vd ngrok: 0.tcp.ngrok.io 17234).
+    // Người dùng vẫn có thể tự nhập/sửa IP & Port ngay trên màn hình kết nối
+    // (vd trỏ tới LAN 192.168.x.x hoặc ngrok 0.tcp.ngrok.io).
     String host = "127.0.0.1";
     int port = 8080;
 
@@ -41,30 +37,19 @@ public class AuctionClientApp extends Application {
       }
     }
 
-    // 1. Khởi tạo mạng ngầm (Không in ra Console nữa, để Controller tự xử lý sau)
-    System.out.println("[Client] Đang kết nối tới máy chủ " + host + ":" + port + " ...");
-    networkClient = new NetworkClient();
-    try {
-      networkClient.connect(host, port, message -> {
-        // Tạm thời chưa xử lý gì ở đây, để dành cho các Controller sau
-        System.out.println("[Client nhận]: " + message);
-      });
-    } catch (IOException e) {
-      System.err.println("Không thể kết nối đến máy chủ " + host + ":" + port
-          + ". Vui lòng bật Server trước!");
-      // Vẫn cho hiện giao diện Login dù chưa có mạng để test UI
-    }
-
-    // 2. Khởi tạo SceneManager và chuyển đến màn hình Login
-    SceneManager.getInstance().init(primaryStage, networkClient);
-    SceneManager.getInstance().switchScene("/fxml/login.fxml", "Đăng nhập Sàn Đấu Giá");
+    // Khởi tạo SceneManager rồi mở MÀN HÌNH KẾT NỐI trước (nhập IP/Port thủ công).
+    // Việc connect thực sự do ConnectionController đảm nhận; gợi ý sẵn host/port ở trên.
+    SceneManager.getInstance().init(primaryStage, null);
+    SceneManager.getInstance().setDefaultHost(host);
+    SceneManager.getInstance().setDefaultPort(port);
+    SceneManager.getInstance().switchScene("/fxml/connection.fxml", "Kết nối máy chủ - BidNow");
   }
 
   @Override
   public void stop() {
     System.out.println("[Client] Đang tắt ứng dụng...");
-    if (networkClient != null) {
-      networkClient.disconnect();
+    if (SceneManager.getInstance().getNetworkClient() != null) {
+      SceneManager.getInstance().getNetworkClient().disconnect();
     }
 
     // Ép máy ảo Java tắt hoàn toàn, tiêu diệt mọi luồng chạy ngầm đang bị kẹt
