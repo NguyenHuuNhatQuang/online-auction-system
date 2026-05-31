@@ -31,7 +31,7 @@
         <Button text="Đặt Giá" onAction="#handlePlaceBid" style="-fx-font-size: 14px; -fx-cursor: hand; -fx-base: #2196F3;"/>
     </HBox>
 
-    <LineChart fx:id="bidChart" prefHeight="250" title="Trực quan hóa diễn biến giá" animated="true">
+    <LineChart fx:id="bidChart" prefHeight="250" title="Trực quan hóa diễn biến giá" animated="false">
         <xAxis>
             <CategoryAxis label="Lượt đặt"/>
         </xAxis>

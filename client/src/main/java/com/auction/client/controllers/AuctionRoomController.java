@@ -118,6 +118,8 @@ public class AuctionRoomController {
               logArea.clear();
               logArea.appendText("=== CHÀO MỪNG ĐẾN PHÒNG ĐẤU GIÁ ===\n");
 
+              ((javafx.scene.chart.CategoryAxis) bidChart.getXAxis()).getCategories().clear();
+
               // THÊM BIỂU ĐỒ: Vẽ lại toàn bộ lịch sử nếu có
               bidSeries.getData().clear();
               bidStepCount = 1;
