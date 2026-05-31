@@ -45,7 +45,7 @@ public class SceneManager {
     try {
       FXMLLoader loader = new FXMLLoader(getClass().getResource(fxmlPath));
       Parent root = loader.load();
-      Scene scene = new Scene(root, 960, 720);
+      Scene scene = new Scene(root, 1280, 720);
       applyTheme(scene);
       primaryStage.setTitle(title);
       primaryStage.setScene(scene);
