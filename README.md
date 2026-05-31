@@ -23,12 +23,21 @@ Sau khi build, các file executable fat JAR được đặt tại:
 * **Server:** `server/target/server-runnable.jar`
 * **Client:** `client/target/client-runnable.jar`
 
-## 5. Hướng dẫn chạy Server/Client theo thứ tự
-**Bước 1: Build project**
-Mở terminal tại thư mục gốc của project và chạy lệnh:
+## 5. Hướng dẫn chạy Server/Client
+
+**Bước 0: Cài đặt hiển thị log tiếng Việt (Windows, optional)**
+Chạy lệnh
+```bash
+chcp 65001
+````
+tại terminal để dự án có thể in log tiếng Việt mà không bị lỗi encoding.
+
+**Bước 1: Build project (Optional)**
+Chạy lệnh
 ```bash
 mvn clean package
 ```
+tại terminal trong thư mục gốc của dự án để biên dịch và đóng gói mã nguồn thành file `.jar`. Hoặc có thể sử dụng trực tiếp các file `.jar` được tạo bởi Github Action.
 
 **Bước 2: Khởi động Server**
 Chạy file `.jar` của Server trước. Cổng (Port) mặc định là 8080, hệ thống sẽ tự động dò tìm cổng trống nếu 8080 bị chiếm.
