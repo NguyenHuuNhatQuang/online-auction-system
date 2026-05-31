@@ -276,7 +276,7 @@ public class LobbyDashboardController extends DashboardController {
     int shown = 0;
     int live = 0;
     for (Row r : rows.values()) {
-      boolean matchStatus = "ALL".equals(statusFilter) || statusFilter.equals(r.status);
+      boolean matchStatus = matchesStatus(r);
       boolean matchType = "ALL".equals(typeFilter)
           || (r.type != null && typeFilter.equalsIgnoreCase(r.type));
       if (matchStatus && matchType) shown++;

@@ -82,26 +82,42 @@ public class DashboardController {
 
   @FXML private void filterLobby() { statusFilter = "ALL"; typeFilter = "ALL"; render(); }
   @FXML private void filterLive() { statusFilter = "RUNNING"; render(); }
-  @FXML private void filterFinished() { statusFilter = "FINISHED"; render(); }
+  // "Đã kết thúc" = lịch sử mọi phiên đã đóng (hết giờ, đã thanh toán, đã hủy).
+  @FXML private void filterFinished() { statusFilter = "ENDED"; render(); }
   @FXML private void filterPaid() { statusFilter = "PAID"; render(); }
 
   @FXML
   private void filterElectronics() {
     typeFilter = "ELECTRONICS".equals(typeFilter) ? "ALL" : "ELECTRONICS";
+    // Lọc theo loại thì luôn về "Sảnh chờ" để hiện mọi trạng thái của loại đó.
+    statusFilter = "ALL";
     render();
   }
 
   @FXML
   private void filterArt() {
     typeFilter = "ART".equals(typeFilter) ? "ALL" : "ART";
+    statusFilter = "ALL";
     render();
+  }
+
+  /** Khớp trạng thái theo bộ lọc hiện tại. "ENDED" gộp mọi phiên đã đóng. */
+  protected boolean matchesStatus(Row r) {
+    switch (statusFilter) {
+      case "ALL":
+        return true;
+      case "ENDED":
+        return "FINISHED".equals(r.status) || "PAID".equals(r.status) || "CANCELED".equals(r.status);
+      default:
+        return statusFilter.equals(r.status);
+    }
   }
 
   protected void render() {
     String selected = auctionListView.getSelectionModel().getSelectedItem();
     auctionListView.getItems().clear();
     for (Row r : rows.values()) {
-      if (!"ALL".equals(statusFilter) && !statusFilter.equals(r.status)) continue;
+      if (!matchesStatus(r)) continue;
       if (!"ALL".equals(typeFilter)) {
         if (r.type == null || !typeFilter.equalsIgnoreCase(r.type)) continue;
       }
@@ -114,11 +130,12 @@ public class DashboardController {
   }
 
   protected String displayOf(Row r) {
-    boolean ended = "FINISHED".equals(r.status) || "PAID".equals(r.status);
+    boolean ended = "FINISHED".equals(r.status) || "PAID".equals(r.status) || "CANCELED".equals(r.status);
     String statusText;
     switch (r.status) {
       case "FINISHED": statusText = "[KẾT THÚC]"; break;
       case "PAID": statusText = "[ĐÃ THANH TOÁN]"; break;
+      case "CANCELED": statusText = "[ĐÃ HỦY]"; break;
       default: statusText = "[ĐANG CHẠY]";
     }
     String topPart = ended ? r.top + " (WIN)" : r.top;
@@ -131,7 +148,7 @@ public class DashboardController {
   protected void refreshNavStyles() {
     styleNav(navLobby, "ALL".equals(statusFilter) && "ALL".equals(typeFilter));
     styleNav(navLive, "RUNNING".equals(statusFilter));
-    styleNav(navFinished, "FINISHED".equals(statusFilter));
+    styleNav(navFinished, "ENDED".equals(statusFilter));
     styleNav(navPaid, "PAID".equals(statusFilter));
     styleNav(navElectronics, "ELECTRONICS".equals(typeFilter));
     styleNav(navArt, "ART".equals(typeFilter));
