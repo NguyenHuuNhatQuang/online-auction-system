@@ -57,6 +57,11 @@ public class AuctionClientApp extends Application {
   }
 
   public static void main(String[] args) {
+    // Định dạng số theo chuẩn Việt Nam: ngăn cách hàng nghìn bằng dấu chấm
+    // (vd 22.222.222) thay vì dấu phẩy. Áp dụng cho toàn bộ String.format("%,.0f"...)
+    // hiển thị giá tiền trên giao diện. Không ảnh hưởng JSON gửi đi (dùng %s) hay
+    // Double.parseDouble (luôn dùng dấu chấm thập phân).
+    java.util.Locale.setDefault(java.util.Locale.of("vi", "VN"));
     launch(args);
   }
 }
