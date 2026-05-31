@@ -140,6 +140,15 @@ java -jar client/target/client-runnable.jar   # client #3
 > Gợi ý demo: tạo 1 tài khoản SELLER để mở phiên, và 2+ tài khoản BIDDER để cùng đặt
 > giá vào một phiên → quan sát cập nhật realtime và xử lý concurrent bidding.
 
+### 5.3. Kết nối tới server từ xa (vd qua ngrok)
+Client mặc định nối tới `127.0.0.1:8080`, nhưng có thể truyền **host/port** qua tham số
+dòng lệnh (hoặc biến môi trường `AUCTION_HOST` / `AUCTION_PORT`):
+```bash
+# Kết nối tới một server đang được expose ra internet (vd ngrok TCP):
+java -jar client/target/client-runnable.jar 0.tcp.ngrok.io 17234
+```
+Nhờ vậy nhiều người ở các máy khác nhau có thể cùng tham gia một phiên đấu giá.
+
 ---
 
 ## 6. Danh sách chức năng đã hoàn thành
