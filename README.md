@@ -80,4 +80,4 @@ java -jar client/target/client-runnable.jar
 ## 7. Tài liệu đính kèm
 
 * **Link báo cáo PDF:** [Github Link](https://github.com/NguyenHuuNhatQuang/online-auction-system/blob/main/report.pdf) hoặc [Google Drive Link](https://drive.google.com/file/d/16QwXcvbkHzm8lJfUbeuD-g8VS25BNjKU/)
-* **Link video demo:** [Chèn link YouTube / Google Drive tại đây]
+* **Link video demo:** (https://drive.google.com/file/d/1JhNtmZJL0NYlXZUmvG77IVBDN9NTTfbz/view?usp=sharing)
