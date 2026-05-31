@@ -46,6 +46,13 @@ java -jar client/target/client-runnable.jar
 
 *(Để giả lập nhiều người dùng, mở nhiều terminal mới và chạy lặp lại lệnh khởi động Client).*
 
+**Tài khoản admin mặc định:**
+
+* Username: `admin`
+* Password: `admin123`
+
+*(Có thể tự demote sau khi cấp quyền admin cho tài khoản khác)*
+
 ## 6. Danh sách chức năng đã hoàn thành
 
 * Giao tiếp mạng thời gian thực (Real-time TCP Socket) bằng JSON.
