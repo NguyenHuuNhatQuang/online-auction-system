@@ -61,7 +61,7 @@ public class AdminDashboardController {
             auctionIds.clear();
             for (JsonNode node : arrayNode) {
               auctionIds.add(node.get("auctionId").asText());
-              allAuctionListView.getItems().add(String.format("[%s] %s | %s | $%.2f", node.get("status").asText(), node.get("auctionId").asText(), node.get("itemName").asText(), node.get("currentPrice").asDouble()));
+              allAuctionListView.getItems().add(String.format("[%s] %s | %s | %,.0f VND", node.get("status").asText(), node.get("auctionId").asText(), node.get("itemName").asText(), node.get("currentPrice").asDouble()));
             }
           } else if ("ERROR".equals(message.getAction())) {
               showAlert("Lỗi", message.getPayload());

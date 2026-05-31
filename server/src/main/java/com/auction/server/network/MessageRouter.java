@@ -5,6 +5,7 @@ import com.auction.common.models.Auction;
 import com.auction.common.models.Bidder;
 import com.auction.common.models.Item;
 import com.auction.common.models.Seller;
+import com.auction.server.database.DatabaseWriteQueue;
 import com.auction.server.factories.ItemFactory;
 import com.auction.server.services.AuctionManager;
 import com.auction.server.services.BiddingService;
@@ -189,8 +190,8 @@ public class MessageRouter {
       client.sendMessage(objectMapper.writeValueAsString(successMsg));
 
       String broadcastPayload = String.format(
-          "{\"auctionId\":\"%s\", \"itemName\":\"%s\", \"itemDesc\":\"%s\", \"currentPrice\":%s, \"highestBidder\":\"Chưa có\", \"endTime\":\"%s\", \"status\":\"RUNNING\"}",
-          auctionId, item.getName(), item.getDescription(), startPrice, endTime.toString()
+          "{\"auctionId\":\"%s\", \"itemName\":\"%s\", \"itemDesc\":\"%s\", \"currentPrice\":%s, \"highestBidder\":\"Chưa có\", \"endTime\":\"%s\", \"status\":\"RUNNING\", \"itemType\":\"%s\", \"sellerName\":\"%s\", \"bidCount\":0}",
+          auctionId, item.getName(), item.getDescription(), startPrice, endTime.toString(), item.getItemType(), sellerName
       );
       SocketMessage broadcastMsg = new SocketMessage("NEW_AUCTION_BROADCAST", broadcastPayload);
       server.broadcastMessage(objectMapper.writeValueAsString(broadcastMsg));
@@ -252,11 +253,14 @@ public class MessageRouter {
     for (int i = 0; i < activeAuctions.size(); i++) {
       Auction session = activeAuctions.get(i);
       String bidderName = (session.getHighestBidder() != null) ? session.getHighestBidder().getUsername() : "Chưa có";
+      String sellerName = (session.getSeller() != null) ? session.getSeller().getUsername() : "—";
+      int bidCount = (session.getBidHistory() != null) ? session.getBidHistory().size() : 0;
 
       payload.append(String.format(
-          "{\"auctionId\":\"%s\", \"itemName\":\"%s\", \"itemDesc\":\"%s\", \"currentPrice\":%s, \"highestBidder\":\"%s\", \"endTime\":\"%s\", \"status\":\"%s\"}",
+          "{\"auctionId\":\"%s\", \"itemName\":\"%s\", \"itemDesc\":\"%s\", \"currentPrice\":%s, \"highestBidder\":\"%s\", \"endTime\":\"%s\", \"status\":\"%s\", \"itemType\":\"%s\", \"sellerName\":\"%s\", \"bidCount\":%d}",
           session.getId(), session.getItem().getName(), session.getItem().getDescription(),
-          session.getCurrentPrice(), bidderName, session.getEndTime().toString(), session.getStatus()
+          session.getCurrentPrice(), bidderName, session.getEndTime().toString(), session.getStatus(),
+          session.getItem().getItemType(), sellerName, bidCount
       ));
       if (i < activeAuctions.size() - 1) payload.append(",");
     }
@@ -310,6 +314,9 @@ public class MessageRouter {
       Item item = ItemFactory.createItem(itemType, itemName, itemDesc, attributes);
       com.auction.server.services.ItemManager.getInstance().addItem(item, sellerId);
 
+      // Chờ lệnh INSERT (bất đồng bộ) ghi xong rồi mới đọc lại kho, tránh trả về
+      // danh sách thiếu sản phẩm vừa thêm (đặc biệt khi đây là sản phẩm đầu tiên).
+      DatabaseWriteQueue.getInstance().flush();
       sendSellerItems(sellerId, client);
     } catch (Exception e) {
       sendError(client, "Không thể thêm sản phẩm: " + e.getMessage());
@@ -336,6 +343,7 @@ public class MessageRouter {
 
       com.auction.server.services.ItemManager.getInstance().updateItem(itemId, newName, newDesc);
 
+      DatabaseWriteQueue.getInstance().flush(); // Chờ ghi xong rồi mới refresh list
       sendSellerItems(sellerId, client); // Refresh lại list
     } catch (Exception e) {
       sendError(client, "Lỗi cập nhật sản phẩm.");
@@ -349,6 +357,7 @@ public class MessageRouter {
       String sellerId = payloadNode.get("sellerId").asText();
 
       com.auction.server.services.ItemManager.getInstance().deleteItem(itemId);
+      DatabaseWriteQueue.getInstance().flush(); // Chờ xóa xong rồi mới refresh list
       sendSellerItems(sellerId, client);
     } catch (Exception e) {
       sendError(client, "Lỗi thực thi lệnh xóa.");
@@ -404,7 +413,8 @@ public class MessageRouter {
       Auction auction = AuctionManager.getInstance().getAuction(auctionId);
 
       if (auction != null && "FINISHED".equals(auction.getStatus())) {
-        auction.setStatus("PAID");
+        // Đổi trạng thái trên RAM VÀ lưu xuống DB (giữ trạng thái PAID khi restart server).
+        AuctionManager.getInstance().updateAuctionStatus(auctionId, "PAID");
 
         // Broadcast cho toàn server biết phiên này đã thanh toán xong
         String payload = String.format("{\"auctionId\":\"%s\"}", auctionId);

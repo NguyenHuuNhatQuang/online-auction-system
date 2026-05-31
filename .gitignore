@@ -37,3 +37,20 @@ build/
 
 ### Mac OS ###
 .DS_Store
+
+### Dữ liệu runtime & file rác (không commit) ###
+# CSDL SQLite sinh ra khi chạy server
+*.db
+auction_system.db
+# Log chạy thử
+*.log
+# Ảnh chụp màn hình / file demo cá nhân
+app.png
+app2.png
+screen.png
+# Công cụ/agent cục bộ
+.agents/
+.claude/
+skills-lock.json
+# File reproduce tạm
+repro-*

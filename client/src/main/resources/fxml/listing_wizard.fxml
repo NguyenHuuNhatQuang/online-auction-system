@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.ColumnConstraints?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.geometry.Insets?>
+
+<VBox xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.auction.client.controllers.ListingWizardController">
+
+    <!-- Navbar -->
+    <HBox styleClass="navbar" alignment="CENTER_LEFT" spacing="14">
+        <Button text="← Sảnh chờ" onAction="#handleCancel" styleClass="btn-ghost"/>
+        <Label text="BidNow" styleClass="nav-logo"/>
+        <Region HBox.hgrow="ALWAYS"/>
+        <Label text="Mở phiên đấu giá mới" styleClass="user-name"/>
+    </HBox>
+
+    <ScrollPane fitToWidth="true" styleClass="feed-bg" VBox.vgrow="ALWAYS" style="-fx-background-color: -bidnow-bg;">
+        <VBox spacing="16" styleClass="wizard-shell">
+            <padding><Insets top="22" right="24" bottom="22" left="24"/></padding>
+
+            <!-- Step indicator -->
+            <HBox spacing="12" alignment="CENTER">
+                <VBox fx:id="stepBox1" styleClass="wizard-step, wizard-step-active" alignment="CENTER">
+                    <Label text="1" styleClass="step-num"/>
+                    <Label text="Loại" styleClass="caption"/>
+                </VBox>
+                <VBox fx:id="stepBox2" styleClass="wizard-step" alignment="CENTER">
+                    <Label text="2" styleClass="step-num"/>
+                    <Label text="Chi tiết" styleClass="caption"/>
+                </VBox>
+                <VBox fx:id="stepBox3" styleClass="wizard-step" alignment="CENTER">
+                    <Label text="3" styleClass="step-num"/>
+                    <Label text="Giá &amp; giờ" styleClass="caption"/>
+                </VBox>
+                <VBox fx:id="stepBox4" styleClass="wizard-step" alignment="CENTER">
+                    <Label text="4" styleClass="step-num"/>
+                    <Label text="Xem lại" styleClass="caption"/>
+                </VBox>
+            </HBox>
+
+            <!-- STEP 1: Type -->
+            <VBox fx:id="pane1" styleClass="card" spacing="12">
+                <Label text="Chọn loại sản phẩm" styleClass="text-subtitle"/>
+                <Label text="Loại sản phẩm quyết định thuộc tính đặc thù (bảo hành / tác giả)." styleClass="text-muted"/>
+                <HBox spacing="14">
+                    <VBox fx:id="electronicsCard" styleClass="type-card" spacing="6" onMouseClicked="#selectElectronics" HBox.hgrow="ALWAYS">
+                        <Label text="📱" styleClass="type-glyph"/>
+                        <Label text="ELECTRONICS" styleClass="text-subtitle"/>
+                        <Label text="Đồ điện tử — có số tháng bảo hành." styleClass="caption" wrapText="true"/>
+                    </VBox>
+                    <VBox fx:id="artCard" styleClass="type-card" spacing="6" onMouseClicked="#selectArt" HBox.hgrow="ALWAYS">
+                        <Label text="🎨" styleClass="type-glyph"/>
+                        <Label text="ART" styleClass="text-subtitle"/>
+                        <Label text="Tác phẩm nghệ thuật — có tên tác giả." styleClass="caption" wrapText="true"/>
+                    </VBox>
+                </HBox>
+            </VBox>
+
+            <!-- STEP 2: Details -->
+            <VBox fx:id="pane2" styleClass="card" spacing="12" visible="false" managed="false">
+                <Label text="Thông tin sản phẩm" styleClass="text-subtitle"/>
+                <GridPane hgap="10" vgap="10">
+                    <columnConstraints>
+                        <ColumnConstraints percentWidth="50"/>
+                        <ColumnConstraints percentWidth="50"/>
+                    </columnConstraints>
+                    <VBox spacing="4" GridPane.columnIndex="0" GridPane.rowIndex="0">
+                        <Label text="TÊN SẢN PHẨM" styleClass="text-section"/>
+                        <TextField fx:id="wzNameField"/>
+                    </VBox>
+                    <VBox spacing="4" GridPane.columnIndex="1" GridPane.rowIndex="0">
+                        <Label text="MÔ TẢ" styleClass="text-section"/>
+                        <TextField fx:id="wzDescField"/>
+                    </VBox>
+                    <VBox spacing="4" GridPane.columnIndex="0" GridPane.rowIndex="1">
+                        <Label fx:id="attrLabel" text="BẢO HÀNH (THÁNG)" styleClass="text-section"/>
+                        <TextField fx:id="wzAttrField"/>
+                    </VBox>
+                </GridPane>
+            </VBox>
+
+            <!-- STEP 3: Pricing -->
+            <VBox fx:id="pane3" styleClass="card" spacing="12" visible="false" managed="false">
+                <Label text="Giá khởi điểm &amp; thời lượng" styleClass="text-subtitle"/>
+                <GridPane hgap="10" vgap="10">
+                    <columnConstraints>
+                        <ColumnConstraints percentWidth="50"/>
+                        <ColumnConstraints percentWidth="50"/>
+                    </columnConstraints>
+                    <VBox spacing="4" GridPane.columnIndex="0" GridPane.rowIndex="0">
+                        <Label text="GIÁ KHỞI ĐIỂM (VND)" styleClass="text-section"/>
+                        <TextField fx:id="wzPriceField"/>
+                    </VBox>
+                    <VBox spacing="4" GridPane.columnIndex="1" GridPane.rowIndex="0">
+                        <Label text="THỜI LƯỢNG (PHÚT)" styleClass="text-section"/>
+                        <TextField fx:id="wzDurationField"/>
+                    </VBox>
+                </GridPane>
+            </VBox>
+
+            <!-- STEP 4: Review -->
+            <VBox fx:id="pane4" styleClass="card" spacing="12" visible="false" managed="false">
+                <Label text="Xem lại &amp; xác nhận" styleClass="text-subtitle"/>
+                <VBox styleClass="review-block" spacing="6">
+                    <HBox styleClass="review-row"><Label text="Loại:" styleClass="text-section"/><Region HBox.hgrow="ALWAYS"/><Label fx:id="reviewType" text="—"/></HBox>
+                    <HBox styleClass="review-row"><Label text="Tên:" styleClass="text-section"/><Region HBox.hgrow="ALWAYS"/><Label fx:id="reviewName" text="—"/></HBox>
+                    <HBox styleClass="review-row"><Label text="Mô tả:" styleClass="text-section"/><Region HBox.hgrow="ALWAYS"/><Label fx:id="reviewDesc" text="—"/></HBox>
+                    <HBox styleClass="review-row"><Label fx:id="reviewAttrLabel" text="Bảo hành:" styleClass="text-section"/><Region HBox.hgrow="ALWAYS"/><Label fx:id="reviewAttr" text="—"/></HBox>
+                    <HBox styleClass="review-row"><Label text="Giá khởi điểm:" styleClass="text-section"/><Region HBox.hgrow="ALWAYS"/><Label fx:id="reviewPrice" text="—"/></HBox>
+                    <HBox styleClass="review-row"><Label text="Thời lượng:" styleClass="text-section"/><Region HBox.hgrow="ALWAYS"/><Label fx:id="reviewDuration" text="—"/></HBox>
+                </VBox>
+                <Label text="Bấm Mở Phiên sẽ thêm sản phẩm vào kho (ADD_ITEM) rồi tạo phiên đấu giá realtime (CREATE_AUCTION)." styleClass="caption" wrapText="true"/>
+            </VBox>
+
+            <!-- Nav buttons -->
+            <HBox spacing="10" alignment="CENTER_RIGHT">
+                <Button fx:id="btnBack" text="← Quay lại" onAction="#handlePrev" styleClass="btn-ghost" visible="false" managed="false"/>
+                <Region HBox.hgrow="ALWAYS"/>
+                <Button fx:id="btnNext" text="Tiếp tục →" onAction="#handleNext" styleClass="btn-primary"/>
+                <Button fx:id="btnSubmit" text="🚀 Mở Phiên" onAction="#handleSubmit" styleClass="btn-success" visible="false" managed="false"/>
+            </HBox>
+        </VBox>
+    </ScrollPane>
+</VBox>

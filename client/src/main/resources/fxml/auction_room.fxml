@@ -2,50 +2,90 @@
 
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.ColumnConstraints?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.TextField?>
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.TextArea?>
+<?import javafx.scene.control.ScrollPane?>
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.chart.LineChart?>
 <?import javafx.scene.chart.CategoryAxis?>
 <?import javafx.scene.chart.NumberAxis?>
 
-<VBox spacing="10.0" alignment="TOP_CENTER" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+<VBox xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
       fx:controller="com.auction.client.controllers.AuctionRoomController">
 
-    <padding>
-        <Insets top="15" right="20" bottom="15" left="20"/>
-    </padding>
-
-    <Label fx:id="roomTitleLabel" text="Đang tải thông tin..." style="-fx-font-size: 20px; -fx-font-weight: bold;"/>
-    <Label fx:id="itemNameLabel" text="Sản phẩm: ..." style="-fx-font-size: 16px;"/>
-    <Label fx:id="itemDescLabel" text="Mô tả: ..." style="-fx-font-size: 14px; -fx-text-fill: gray;"/>
-    <Label fx:id="timerLabel" text="Thời gian còn lại: ..." style="-fx-font-size: 16px; -fx-text-fill: #E65100; -fx-font-weight: bold;"/>
-    <Label fx:id="currentPriceLabel" text="Giá hiện tại: Đang chờ cập nhật..." style="-fx-font-size: 18px; -fx-text-fill: #D32F2F; -fx-font-weight: bold;"/>
-    <Label fx:id="highestBidderLabel" text="Người giữ giá: Chưa có" style="-fx-font-size: 14px; -fx-text-fill: #1976D2;"/>
-
-    <HBox spacing="10" alignment="CENTER">
-        <Label text="\$" style="-fx-font-size: 16px;"/>
-        <TextField fx:id="bidAmountField" promptText="Nhập mức giá..." style="-fx-font-size: 14px;"/>
-        <Button text="Đặt Giá" onAction="#handlePlaceBid" style="-fx-font-size: 14px; -fx-cursor: hand; -fx-base: #2196F3;"/>
+    <!-- Navbar -->
+    <HBox styleClass="navbar" alignment="CENTER_LEFT" spacing="14">
+        <Button text="← Rời phòng" onAction="#handleLeaveRoom" styleClass="btn-ghost"/>
+        <Label text="BidNow" styleClass="nav-logo"/>
+        <Region HBox.hgrow="ALWAYS"/>
+        <Label fx:id="timerLabel" text="Thời gian còn lại: ..." styleClass="badge, badge-seller"/>
     </HBox>
 
-    <LineChart fx:id="bidChart" prefHeight="250" title="Trực quan hóa diễn biến giá" animated="true">
-        <xAxis>
-            <CategoryAxis label="Lượt đặt"/>
-        </xAxis>
-        <yAxis>
-            <NumberAxis label="Mức giá ($)"/>
-        </yAxis>
-    </LineChart>
+    <ScrollPane fitToWidth="true" styleClass="feed-bg" VBox.vgrow="ALWAYS" style="-fx-background-color: -bidnow-bg;">
+        <VBox spacing="16" styleClass="feed-bg">
+            <padding><Insets top="22" right="24" bottom="22" left="24"/></padding>
 
-    <Label text="Lịch sử diễn biến:" style="-fx-font-size: 14px;"/>
-    <TextArea fx:id="logArea" editable="false" wrapText="true" prefHeight="100" VBox.vgrow="ALWAYS" style="-fx-font-family: 'Consolas';"/>
+            <!-- Hero header -->
+            <VBox styleClass="card" spacing="6">
+                <Label fx:id="roomTitleLabel" text="Đang tải thông tin..." styleClass="text-title"/>
+                <Label fx:id="itemNameLabel" text="Sản phẩm: ..." styleClass="text-subtitle"/>
+                <Label fx:id="itemDescLabel" text="Mô tả: ..." styleClass="text-muted" wrapText="true"/>
+            </VBox>
 
-    <HBox spacing="20" alignment="CENTER">
-        <Button fx:id="payButton" text="Thanh Toán Ngay" onAction="#handlePay" visible="false" managed="false" style="-fx-font-size: 14px; -fx-cursor: hand; -fx-base: #4CAF50; -fx-font-weight: bold;"/>
-        <Button text="Rời khỏi phòng" onAction="#handleLeaveRoom" style="-fx-font-size: 14px; -fx-cursor: hand;"/>
-    </HBox>
+            <!-- Price + bid -->
+            <GridPane hgap="16" vgap="16">
+                <columnConstraints>
+                    <ColumnConstraints percentWidth="55"/>
+                    <ColumnConstraints percentWidth="45"/>
+                </columnConstraints>
 
+                <!-- Price card -->
+                <VBox styleClass="stat-card" spacing="6" GridPane.columnIndex="0" GridPane.rowIndex="0">
+                    <Label text="GIÁ HIỆN TẠI" styleClass="text-section"/>
+                    <Label fx:id="currentPriceLabel" text="Đang chờ cập nhật..." styleClass="stat-num" style="-fx-text-fill: -bidnow-error;"/>
+                    <Label fx:id="highestBidderLabel" text="Người giữ giá: Chưa có" styleClass="caption" style="-fx-text-fill: -bidnow-primary;"/>
+                </VBox>
+
+                <!-- Bid input card -->
+                <VBox styleClass="card, card-selected" spacing="10" GridPane.columnIndex="1" GridPane.rowIndex="0">
+                    <Label text="ĐẶT GIÁ CỦA BẠN (VND)" styleClass="text-section"/>
+                    <TextField fx:id="bidAmountField"/>
+                    <HBox alignment="CENTER_RIGHT">
+                        <Button text="Đặt Giá" onAction="#handlePlaceBid" styleClass="btn-primary" maxWidth="Infinity" HBox.hgrow="ALWAYS"/>
+                    </HBox>
+                </VBox>
+            </GridPane>
+
+            <!-- Chart -->
+            <VBox styleClass="card" spacing="8">
+                <Label text="📈 Diễn biến giá" styleClass="text-subtitle"/>
+                <LineChart fx:id="bidChart" prefHeight="250" title="Trực quan hóa diễn biến giá" animated="true">
+                    <xAxis>
+                        <CategoryAxis label="Lượt đặt"/>
+                    </xAxis>
+                    <yAxis>
+                        <NumberAxis label="Mức giá (VND)"/>
+                    </yAxis>
+                </LineChart>
+            </VBox>
+
+            <!-- Log -->
+            <VBox styleClass="card" spacing="8">
+                <Label text="📜 Lịch sử diễn biến" styleClass="text-subtitle"/>
+                <TextArea fx:id="logArea" editable="false" wrapText="true" prefHeight="160"
+                          style="-fx-font-family: 'Consolas'; -fx-control-inner-background: #0f172a; -fx-text-fill: #e2e8f0;"/>
+            </VBox>
+
+            <!-- Actions -->
+            <HBox spacing="10" alignment="CENTER_RIGHT">
+                <Button fx:id="payButton" text="Thanh Toán Ngay" onAction="#handlePay" visible="false" managed="false" styleClass="btn-success"/>
+                <Button text="Rời khỏi phòng" onAction="#handleLeaveRoom" styleClass="btn-ghost"/>
+            </HBox>
+        </VBox>
+    </ScrollPane>
 </VBox>

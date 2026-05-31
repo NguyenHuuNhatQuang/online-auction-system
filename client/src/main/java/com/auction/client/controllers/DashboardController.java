@@ -10,18 +10,46 @@ import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
 
+import java.util.LinkedHashMap;
+import java.util.Map;
+
 public class DashboardController {
 
   @FXML private Label welcomeLabel;
-  @FXML private ListView<String> auctionListView;
+  @FXML protected ListView<String> auctionListView;
 
-  @FXML private HBox createAuctionInputBox;
   @FXML private Button createAuctionBtn;
+  @FXML private Button wizardBtn;
   @FXML private Button adminPanelBtn;
 
-  private NetworkClient networkClient;
-  private String currentUser;
+  // Sidebar nav (lọc danh sách phiên)
+  @FXML private Label navLobby;
+  @FXML private Label navLive;
+  @FXML private Label navFinished;
+  @FXML private Label navPaid;
+  @FXML private Label navElectronics;
+  @FXML private Label navArt;
+
+  protected NetworkClient networkClient;
+  protected String currentUser;
   private final ObjectMapper objectMapper = new ObjectMapper();
+
+  // Backing model + trạng thái lọc
+  protected static class Row {
+    String id;
+    String name;
+    String status;  // RUNNING | FINISHED | PAID
+    String type;    // ELECTRONICS | ART | null
+    String top;
+    double price;
+    String endTime;     // ISO LocalDateTime (rỗng nếu không có)
+    String seller;      // tên seller
+    int bidCount;       // số lượt bid
+  }
+
+  protected final Map<String, Row> rows = new LinkedHashMap<>();
+  protected String statusFilter = "ALL"; // ALL | RUNNING | FINISHED | PAID
+  protected String typeFilter = "ALL";   // ALL | ELECTRONICS | ART
 
   @FXML
   public void initialize() {
@@ -35,6 +63,10 @@ public class DashboardController {
     if ("BIDDER".equalsIgnoreCase(userRole)) {
       createAuctionBtn.setVisible(false);
       createAuctionBtn.setManaged(false);
+      if (wizardBtn != null) {
+        wizardBtn.setVisible(false);
+        wizardBtn.setManaged(false);
+      }
     }
     // Nếu là Admin, hiện nút Bảng Quản Trị (Admin vẫn được phép dùng Kho Sản Phẩm)
     if ("ADMIN".equalsIgnoreCase(userRole)) {
@@ -42,12 +74,73 @@ public class DashboardController {
       adminPanelBtn.setManaged(true);
     }
 
+    refreshNavStyles();
     networkClient.sendMessage("{\"action\":\"GET_ACTIVE_AUCTIONS\", \"payload\":\"\"}");
   }
 
+  // ---------------- Sidebar filters ----------------
+
+  @FXML private void filterLobby() { statusFilter = "ALL"; typeFilter = "ALL"; render(); }
+  @FXML private void filterLive() { statusFilter = "RUNNING"; render(); }
+  @FXML private void filterFinished() { statusFilter = "FINISHED"; render(); }
+  @FXML private void filterPaid() { statusFilter = "PAID"; render(); }
+
   @FXML
-  private void handleGoToManageProducts() {
-    SceneManager.getInstance().switchScene("/fxml/product_management.fxml", "Kho hàng của tôi - " + currentUser);
+  private void filterElectronics() {
+    typeFilter = "ELECTRONICS".equals(typeFilter) ? "ALL" : "ELECTRONICS";
+    render();
+  }
+
+  @FXML
+  private void filterArt() {
+    typeFilter = "ART".equals(typeFilter) ? "ALL" : "ART";
+    render();
+  }
+
+  protected void render() {
+    String selected = auctionListView.getSelectionModel().getSelectedItem();
+    auctionListView.getItems().clear();
+    for (Row r : rows.values()) {
+      if (!"ALL".equals(statusFilter) && !statusFilter.equals(r.status)) continue;
+      if (!"ALL".equals(typeFilter)) {
+        if (r.type == null || !typeFilter.equalsIgnoreCase(r.type)) continue;
+      }
+      auctionListView.getItems().add(displayOf(r));
+    }
+    if (selected != null && auctionListView.getItems().contains(selected)) {
+      auctionListView.getSelectionModel().select(selected);
+    }
+    refreshNavStyles();
+  }
+
+  protected String displayOf(Row r) {
+    boolean ended = "FINISHED".equals(r.status) || "PAID".equals(r.status);
+    String statusText;
+    switch (r.status) {
+      case "FINISHED": statusText = "[KẾT THÚC]"; break;
+      case "PAID": statusText = "[ĐÃ THANH TOÁN]"; break;
+      default: statusText = "[ĐANG CHẠY]";
+    }
+    String topPart = ended ? r.top + " (WIN)" : r.top;
+    String pricePart = ended
+        ? String.format("Giá Chốt: %,.0f VND", r.price)
+        : String.format("Giá: %,.0f VND", r.price);
+    return String.format("%s %s | %s | Top: %s | %s", statusText, r.id, r.name, topPart, pricePart);
+  }
+
+  protected void refreshNavStyles() {
+    styleNav(navLobby, "ALL".equals(statusFilter) && "ALL".equals(typeFilter));
+    styleNav(navLive, "RUNNING".equals(statusFilter));
+    styleNav(navFinished, "FINISHED".equals(statusFilter));
+    styleNav(navPaid, "PAID".equals(statusFilter));
+    styleNav(navElectronics, "ELECTRONICS".equals(typeFilter));
+    styleNav(navArt, "ART".equals(typeFilter));
+  }
+
+  private void styleNav(Label label, boolean active) {
+    if (label == null) return;
+    label.getStyleClass().remove("nav-item-active");
+    if (active) label.getStyleClass().add("nav-item-active");
   }
 
   /**
@@ -57,102 +150,78 @@ public class DashboardController {
     System.out.println("[Dashboard] Nhận thông điệp: " + jsonMessage);
 
     try {
-      // Phân tích JSON thành đối tượng SocketMessage
       SocketMessage message = objectMapper.readValue(jsonMessage, SocketMessage.class);
 
-      // Bất kỳ thao tác nào làm thay đổi giao diện đều PHẢI nằm trong Platform.runLater
       Platform.runLater(() -> {
         try {
           switch (message.getAction()) {
             case "ACTIVE_AUCTIONS_LIST": {
               JsonNode arrayNode = objectMapper.readTree(message.getPayload());
-              auctionListView.getItems().clear();
+              rows.clear();
               for (JsonNode node : arrayNode) {
-                String aucId = node.get("auctionId").asText();
-                String itemName = node.get("itemName").asText();
-                double price = node.get("currentPrice").asDouble();
-                String top = node.get("highestBidder").asText();
-                String status = node.get("status").asText();
-                String statusText = "[ĐANG CHẠY]";
-
-                if ("FINISHED".equals(status)) {
-                  statusText = "[KẾT THÚC]";
-                } else if ("PAID".equals(status)) {
-                  statusText = "[ĐÃ THANH TOÁN]";
-                }
-
-                auctionListView.getItems().add(String.format("%s %s | %s | Top: %s | Giá: $%.2f", statusText, aucId, itemName, top, price));
+                Row r = new Row();
+                r.id = node.get("auctionId").asText();
+                r.name = node.get("itemName").asText();
+                r.price = node.get("currentPrice").asDouble();
+                r.top = node.get("highestBidder").asText();
+                r.status = node.get("status").asText();
+                r.type = node.has("itemType") ? node.get("itemType").asText() : null;
+                r.endTime = node.has("endTime") ? node.get("endTime").asText() : null;
+                r.seller = node.has("sellerName") ? node.get("sellerName").asText() : "—";
+                r.bidCount = node.has("bidCount") ? node.get("bidCount").asInt() : 0;
+                rows.put(r.id, r);
               }
+              render();
               break;
             }
 
             case "NEW_AUCTION_BROADCAST": {
               JsonNode node = objectMapper.readTree(message.getPayload());
-              String aucId = node.get("auctionId").asText();
-              String itemName = node.get("itemName").asText();
-              double price = node.get("currentPrice").asDouble();
-
-              String displayText = String.format("[ĐANG CHẠY] %s | %s | Top: Chưa có | Giá: $%.2f", aucId, itemName, price);
-              if (!auctionListView.getItems().contains(displayText)) {
-                auctionListView.getItems().add(displayText);
-              }
+              Row r = new Row();
+              r.id = node.get("auctionId").asText();
+              r.name = node.get("itemName").asText();
+              r.price = node.get("currentPrice").asDouble();
+              r.top = "Chưa có";
+              r.status = "RUNNING";
+              r.type = node.has("itemType") ? node.get("itemType").asText() : null;
+              r.endTime = node.has("endTime") ? node.get("endTime").asText() : null;
+              r.seller = node.has("sellerName") ? node.get("sellerName").asText() : "—";
+              r.bidCount = node.has("bidCount") ? node.get("bidCount").asInt() : 0;
+              rows.put(r.id, r);
+              render();
               break;
             }
 
             case "NEW_BID_BROADCAST": {
               JsonNode bidNode = objectMapper.readTree(message.getPayload());
-              String targetAuctionId = bidNode.get("auctionId").asText();
-              double newPrice = bidNode.get("newPrice").asDouble();
-              String highestBidder = bidNode.get("highestBidder").asText();
-
-              for (int i = 0; i < auctionListView.getItems().size(); i++) {
-                String line = auctionListView.getItems().get(i);
-                if (line.contains(targetAuctionId)) {
-                  // Giữ lại phần đầu (Trạng thái + ID + Tên), chỉ thay đổi Top và Giá
-                  String[] parts = line.split("\\|");
-                  if (parts.length >= 3) {
-                    parts[2] = String.format(" Top: %s ", highestBidder);
-                    parts[3] = String.format(" Giá: $%.2f", newPrice);
-                    auctionListView.getItems().set(i, String.join("|", parts));
-                  }
-                  break;
-                }
+              Row r = rows.get(bidNode.get("auctionId").asText());
+              if (r != null) {
+                r.price = bidNode.get("newPrice").asDouble();
+                r.top = bidNode.get("highestBidder").asText();
+                r.bidCount++;
+                render();
               }
               break;
             }
 
             case "AUCTION_FINISHED": {
               JsonNode endNode = objectMapper.readTree(message.getPayload());
-              String endedId = endNode.get("auctionId").asText();
-              String winner = endNode.get("winner").asText();
-              double finalPrice = endNode.get("finalPrice").asDouble();
-
-              for (int i = 0; i < auctionListView.getItems().size(); i++) {
-                String line = auctionListView.getItems().get(i);
-                if (line.contains(endedId)) {
-                  // Đổi mác thành KẾT THÚC và chốt người thắng
-                  String updatedLine = line.replace("[ĐANG CHẠY]", "[KẾT THÚC]");
-                  String[] parts = updatedLine.split("\\|");
-                  if (parts.length >= 3) {
-                    parts[2] = String.format(" Top: %s (WIN) ", winner);
-                    parts[3] = String.format(" Giá Chốt: $%.2f", finalPrice);
-                    auctionListView.getItems().set(i, String.join("|", parts));
-                  }
-                  break;
-                }
+              Row r = rows.get(endNode.get("auctionId").asText());
+              if (r != null) {
+                r.status = "FINISHED";
+                r.top = endNode.get("winner").asText();
+                r.price = endNode.get("finalPrice").asDouble();
+                render();
               }
               break;
             }
 
             case "AUCTION_PAID": {
               JsonNode paidNode = objectMapper.readTree(message.getPayload());
-              String paidId = paidNode.get("auctionId").asText();
-              for (int i = 0; i < auctionListView.getItems().size(); i++) {
-                String line = auctionListView.getItems().get(i);
-                if (line.contains(paidId)) {
-                  auctionListView.getItems().set(i, line.replace("[KẾT THÚC]", "[ĐÃ THANH TOÁN]"));
-                  break;
-                }
+              Row r = rows.get(paidNode.get("auctionId").asText());
+              if (r != null) {
+                r.status = "PAID";
+                render();
               }
               break;
             }
@@ -175,6 +244,16 @@ public class DashboardController {
     } catch (Exception e) {
       System.err.println("Không thể parse JSON: " + jsonMessage);
     }
+  }
+
+  @FXML
+  private void handleGoToManageProducts() {
+    SceneManager.getInstance().switchScene("/fxml/product_management.fxml", "Kho hàng của tôi - " + currentUser);
+  }
+
+  @FXML
+  private void handleGoToWizard() {
+    SceneManager.getInstance().switchScene("/fxml/listing_wizard.fxml", "Đăng sản phẩm mới - " + currentUser);
   }
 
   @FXML
@@ -221,14 +300,8 @@ public class DashboardController {
     alert.showAndWait();
   }
 
-  // Hàm phụ trợ bọc JSON payload thành chuỗi hợp lệ
-  private String escapeJson(String raw) {
-    return "\"" + raw.replace("\"", "\\\"") + "\"";
-  }
-
   @FXML
   private void handleLogout() {
-    // Xóa session và quay về Login
     SceneManager.getInstance().setCurrentUser(null);
     SceneManager.getInstance().setUserRole(null);
     SceneManager.getInstance().switchScene("/fxml/login.fxml", "Đăng nhập Sàn Đấu Giá");

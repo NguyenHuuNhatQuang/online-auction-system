@@ -20,6 +20,7 @@ public class SceneManager {
   private String currentUser; // Lưu tên người dùng sau khi nhập
   private String currentAuctionId;
   private String userRole;
+  private String registerRole; // Vai trò tạm thời truyền sang màn Đăng ký (BIDDER/SELLER)
 
   private SceneManager() {}
 
@@ -43,12 +44,24 @@ public class SceneManager {
       FXMLLoader loader = new FXMLLoader(getClass().getResource(fxmlPath));
       Parent root = loader.load();
       Scene scene = new Scene(root, 960, 720);
+      applyTheme(scene);
       primaryStage.setTitle(title);
       primaryStage.setScene(scene);
       primaryStage.show();
     } catch (IOException e) {
       System.err.println("Lỗi khi tải giao diện " + fxmlPath + ": " + e.getMessage());
       e.printStackTrace();
+    }
+  }
+
+  /** Đường dẫn tới stylesheet BidNow dùng chung toàn app. */
+  public static final String THEME_CSS = "/css/app.css";
+
+  /** Gắn theme BidNow vào một Scene bất kỳ. */
+  public void applyTheme(Scene scene) {
+    java.net.URL css = getClass().getResource(THEME_CSS);
+    if (css != null) {
+      scene.getStylesheets().add(css.toExternalForm());
     }
   }
 
@@ -60,4 +73,6 @@ public class SceneManager {
   public void setCurrentAuctionId(String currentAuctionId) { this.currentAuctionId = currentAuctionId; }
   public String getUserRole() { return userRole; }
   public void setUserRole(String userRole) { this.userRole = userRole; }
+  public String getRegisterRole() { return registerRole; }
+  public void setRegisterRole(String registerRole) { this.registerRole = registerRole; }
 }
