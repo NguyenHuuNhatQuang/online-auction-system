@@ -13,6 +13,8 @@ import java.util.function.Consumer;
  */
 public class NetworkClient {
 
+  private String host;
+  private int port;
   private Socket socket;
   private PrintWriter out;
   private BufferedReader in;
@@ -22,17 +24,24 @@ public class NetworkClient {
   private Consumer<String> onMessageReceived;
 
   /**
-   * Khởi tạo kết nối mạng tới máy chủ.
+   * CONSTRUCTOR MỚI: Khởi tạo thông tin cấu hình mạng trước.
    *
    * @param host IP của máy chủ (VD: "127.0.0.1").
    * @param port Cổng mạng (VD: 8080).
-   * @param onMessageReceived Hàm Callback để xử lý khi có chuỗi JSON từ Server gửi về.
    */
-  public void connect(String host, int port, Consumer<String> onMessageReceived) throws IOException {
+  public NetworkClient(String host, int port) {
+    this.host = host;
+    this.port = port;
+  }
+
+  /**
+   * HÀM CONNECT ĐƯỢC LÀM GỌN LẠI:
+   * Mở kết nối vật lý đến máy chủ sử dụng IP và Port đã lưu.
+   */
+  public void connect() throws IOException {
     this.socket = new Socket(host, port);
     this.out = new PrintWriter(socket.getOutputStream(), true);
     this.in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-    this.onMessageReceived = onMessageReceived;
 
     System.out.println("[NetworkClient] Đã kết nối tới Server: " + host + ":" + port);
     startListening();
@@ -84,11 +93,19 @@ public class NetworkClient {
   }
 
   /**
+   * HÀM KIỂM TRA TRẠNG THÁI:
+   * @return true nếu kết nối vẫn đang sống và chưa bị đóng.
+   */
+  public boolean isConnected() {
+    return socket != null && socket.isConnected() && !socket.isClosed();
+  }
+
+  /**
    * Chủ động ngắt kết nối an toàn từ phía Client.
    */
   public void disconnect() {
     try {
-      // 1. THÊM DÒNG NÀY: Gửi thông điệp chia tay lên Server trước khi ngắt mạng
+      // 1. Gửi thông điệp chia tay lên Server trước khi ngắt mạng
       sendMessage("{\"action\":\"CLIENT_DISCONNECT\", \"payload\":\"\"}");
 
       // Đợi 50 mili-giây để đảm bảo gói tin kịp đẩy đi trước khi rút cáp

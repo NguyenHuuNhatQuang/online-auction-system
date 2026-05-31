@@ -60,4 +60,5 @@ public class SceneManager {
   public void setCurrentAuctionId(String currentAuctionId) { this.currentAuctionId = currentAuctionId; }
   public String getUserRole() { return userRole; }
   public void setUserRole(String userRole) { this.userRole = userRole; }
+  public void setNetworkClient(NetworkClient networkClient) { this.networkClient = networkClient; }
 }

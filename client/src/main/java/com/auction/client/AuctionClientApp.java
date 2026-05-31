@@ -1,40 +1,27 @@
 package com.auction.client;
 
 import com.auction.client.core.SceneManager;
-import com.auction.client.network.NetworkClient;
 import javafx.application.Application;
 import javafx.stage.Stage;
 
-import java.io.IOException;
-
 public class AuctionClientApp extends Application {
-
-  private NetworkClient networkClient;
 
   @Override
   public void start(Stage primaryStage) {
-    // 1. Khởi tạo mạng ngầm (Không in ra Console nữa, để Controller tự xử lý sau)
-    networkClient = new NetworkClient();
-    try {
-      networkClient.connect("127.0.0.1", 8080, message -> {
-        // Tạm thời chưa xử lý gì ở đây, để dành cho các Controller sau
-        System.out.println("[Client nhận]: " + message);
-      });
-    } catch (IOException e) {
-      System.err.println("Không thể kết nối đến máy chủ. Vui lòng bật Server trước!");
-      // Vẫn cho hiện giao diện Login dù chưa có mạng để test UI
-    }
+    // 1. Khởi tạo SceneManager (Lúc này truyền null cho NetworkClient vì chưa kết nối)
+    SceneManager.getInstance().init(primaryStage, null);
 
-    // 2. Khởi tạo SceneManager và chuyển đến màn hình Login
-    SceneManager.getInstance().init(primaryStage, networkClient);
-    SceneManager.getInstance().switchScene("/fxml/login.fxml", "Đăng nhập Sàn Đấu Giá");
+    // 2. Chuyển hướng người dùng đến màn hình Kết nối (Connection Screen) thay vì Login
+    SceneManager.getInstance().switchScene("/fxml/connection.fxml", "Thiết lập Kết nối với Máy chủ");
   }
 
   @Override
   public void stop() {
     System.out.println("[Client] Đang tắt ứng dụng...");
-    if (networkClient != null) {
-      networkClient.disconnect();
+
+    // Lấy NetworkClient từ SceneManager để đóng kết nối an toàn trước khi tắt App
+    if (SceneManager.getInstance().getNetworkClient() != null) {
+      SceneManager.getInstance().getNetworkClient().disconnect();
     }
 
     // Ép máy ảo Java tắt hoàn toàn, tiêu diệt mọi luồng chạy ngầm đang bị kẹt

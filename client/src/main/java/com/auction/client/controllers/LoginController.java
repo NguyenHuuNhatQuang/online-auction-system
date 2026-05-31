@@ -1,6 +1,7 @@
 package com.auction.client.controllers;
 
 import com.auction.client.core.SceneManager;
+import com.auction.client.network.NetworkClient;
 import com.auction.common.dto.SocketMessage;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -16,28 +17,36 @@ public class LoginController {
   @FXML private PasswordField passwordField; // Khai báo thêm password
 
   private final ObjectMapper objectMapper = new ObjectMapper();
+  private NetworkClient networkClient;
 
   @FXML
   public void initialize() {
-    // Vừa vào màn hình login, giành quyền lắng nghe kết quả đăng nhập từ Server
-    SceneManager.getInstance().getNetworkClient().setOnMessageReceived(this::handleServerResponse);
+    // Lấy kết nối mạng đã được tạo từ màn hình Connection
+    this.networkClient = SceneManager.getInstance().getNetworkClient();
+
+    // Gán hàm lắng nghe tin nhắn cho màn hình Login
+    if (this.networkClient != null) {
+      this.networkClient.setOnMessageReceived(this::handleServerResponse);
+    }
   }
 
   @FXML
   private void handleLogin() {
-    String username = usernameField.getText().trim();
-    String password = passwordField.getText().trim();
+    String username = usernameField.getText();
+    String password = passwordField.getText();
 
     if (username.isEmpty() || password.isEmpty()) {
       showAlert("Lỗi", "Vui lòng nhập đầy đủ tên đăng nhập và mật khẩu!");
       return;
     }
 
-    // Đóng gói JSON gửi yêu cầu đăng nhập
-    String payload = String.format("{\"username\":\"%s\", \"password\":\"%s\"}", username, password);
-    String request = String.format("{\"action\":\"LOGIN\", \"payload\":%s}", escapeJson(payload));
-
-    SceneManager.getInstance().getNetworkClient().sendMessage(request);
+    try {
+      // Chỉ việc gửi lệnh Đăng nhập qua Socket đang mở sẵn
+      String payload = String.format("{\"username\":\"%s\", \"password\":\"%s\"}", username, password);
+      networkClient.sendMessage(String.format("{\"action\":\"LOGIN\", \"payload\":%s}", escapeJson(payload)));
+    } catch (Exception e) {
+      showAlert("Lỗi", "Mất kết nối với máy chủ!");
+    }
   }
 
   @FXML
