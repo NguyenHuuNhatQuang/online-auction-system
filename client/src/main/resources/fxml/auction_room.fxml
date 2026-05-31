@@ -78,7 +78,8 @@
             <VBox styleClass="card" spacing="8">
                 <Label text="📜 Lịch sử diễn biến" styleClass="text-subtitle"/>
                 <TextArea fx:id="logArea" editable="false" wrapText="true" prefHeight="160"
-                          style="-fx-font-family: 'Consolas'; -fx-control-inner-background: #0f172a; -fx-text-fill: #e2e8f0;"/>
+                          styleClass="log-area"
+                          style="-fx-font-family: 'Consolas';"/>
             </VBox>
 
             <!-- Actions -->
