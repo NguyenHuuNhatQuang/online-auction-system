@@ -21,8 +21,7 @@
         <TextField fx:id="ipField" text="127.0.0.1" promptText="Ví dụ: 192.168.1.15" style="-fx-font-size: 14px; -fx-padding: 8px;"/>
 
         <Label text="Port:" style="-fx-font-size: 14px;"/>
-        <TextField fx:id="portField" text="8080" editable="false" style="-fx-font-size: 14px; -fx-padding: 8px; -fx-background-color: #f0f0f0;"/>
-    </VBox>
+        <TextField fx:id="portField" text="8080" promptText="VD: 8080" style="-fx-font-size: 14px; -fx-padding: 8px;"/>    </VBox>
 
     <Label fx:id="statusLabel" text="" style="-fx-text-fill: red;"/>
 

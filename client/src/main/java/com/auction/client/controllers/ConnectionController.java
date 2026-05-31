@@ -16,10 +16,22 @@ public class ConnectionController {
   @FXML
   private void handleConnect() {
     String ip = ipField.getText().trim();
-    int port = Integer.parseInt(portField.getText().trim());
+    int port;
+
+    // THÊM ĐOẠN KIỂM TRA BẢO VỆ DỮ LIỆU NHẬP VÀO
+    try {
+      port = Integer.parseInt(portField.getText().trim());
+      if (port <= 0 || port > 65535) {
+        throw new NumberFormatException();
+      }
+    } catch (NumberFormatException e) {
+      statusLabel.setStyle("-fx-text-fill: red;");
+      statusLabel.setText("Lỗi: Port phải là một số từ 1 đến 65535!");
+      return;
+    }
 
     statusLabel.setStyle("-fx-text-fill: blue;");
-    statusLabel.setText("Đang kết nối đến " + ip + "...");
+    statusLabel.setText("Đang kết nối đến " + ip + ":" + port + "...");
 
     // Chạy việc kết nối trên luồng riêng để không làm đơ giao diện
     new Thread(() -> {
