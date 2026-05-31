@@ -67,8 +67,11 @@ public class ProductManagementController {
                 extra = " [Bảo hành: " + node.get("warrantyMonths").asText() + " tháng]";
                 attr = "Bảo hành " + node.get("warrantyMonths").asText() + " tháng";
               } else if (node.has("artist")) {
-                extra = " [Họa sĩ: " + node.get("artist").asText() + "]";
-                attr = "Tác giả: " + node.get("artist").asText();
+                String a = node.get("artist").asText();
+                if (a != null && !a.isBlank() && !"Unknown".equalsIgnoreCase(a)) {
+                  extra = " [Họa sĩ: " + a + "]";
+                  attr = "Tác giả: " + a;
+                }
               }
 
               itemListView.getItems().add(String.format("(%s) %s - %s %s", type, name, desc, extra));
@@ -123,7 +126,7 @@ public class ProductManagementController {
       }
       payload = String.format("{\\\"itemType\\\":\\\"ELECTRONICS\\\", \\\"itemName\\\":\\\"%s\\\", \\\"itemDesc\\\":\\\"%s\\\", \\\"sellerId\\\":\\\"%s\\\", \\\"warrantyMonths\\\":%d}", name, desc, currentUser, warranty);
     } else {
-      String artist = attr.isEmpty() ? "Unknown" : attr;
+      String artist = attr; // để trống nếu người dùng không nhập (không gán "Unknown")
       payload = String.format("{\\\"itemType\\\":\\\"ART\\\", \\\"itemName\\\":\\\"%s\\\", \\\"itemDesc\\\":\\\"%s\\\", \\\"sellerId\\\":\\\"%s\\\", \\\"artist\\\":\\\"%s\\\"}", name, desc, currentUser, artist);
     }
 

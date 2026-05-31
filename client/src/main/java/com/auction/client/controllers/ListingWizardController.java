@@ -165,7 +165,7 @@ public class ListingWizardController {
     String attr = wzAttrField.getText().trim();
     if ("ART".equals(selectedType)) {
       reviewAttrLabel.setText("Tác giả:");
-      reviewAttr.setText(attr.isEmpty() ? "Unknown" : attr);
+      reviewAttr.setText(attr.isEmpty() ? "—" : attr);
     } else {
       reviewAttrLabel.setText("Bảo hành:");
       reviewAttr.setText((attr.isEmpty() ? "0" : attr) + " tháng");
@@ -193,7 +193,7 @@ public class ListingWizardController {
           "{\\\"itemType\\\":\\\"ELECTRONICS\\\", \\\"itemName\\\":\\\"%s\\\", \\\"itemDesc\\\":\\\"%s\\\", \\\"sellerId\\\":\\\"%s\\\", \\\"warrantyMonths\\\":%d}",
           name, desc, currentUser, warranty);
     } else {
-      String artist = attr.isEmpty() ? "Unknown" : attr;
+      String artist = attr; // để trống nếu không nhập (không gán "Unknown")
       payload = String.format(
           "{\\\"itemType\\\":\\\"ART\\\", \\\"itemName\\\":\\\"%s\\\", \\\"itemDesc\\\":\\\"%s\\\", \\\"sellerId\\\":\\\"%s\\\", \\\"artist\\\":\\\"%s\\\"}",
           name, desc, currentUser, artist);
